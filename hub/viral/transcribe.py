@@ -69,3 +69,49 @@ def onsets_to_beats(tr: Transcription, bpm: float, grid: float = 0.25) -> list[t
         return []
     t0 = tr.onsets[0].t_s; beat_s = 60.0 / bpm
     return [(round((o.t_s - t0) / beat_s / grid) * grid, o.cluster, o.strength) for o in tr.onsets]
+
+
+# ---------- compact musical digest for the model (deterministic) ----------
+GRID = 0.25
+CYCLE_CANDIDATES = (4, 6, 7, 8, 12, 14, 16)
+
+
+def cycle_scores(events: list[tuple[float, int, float]], candidates=CYCLE_CANDIDATES) -> dict[int, float]:
+    """How periodic is the onset pattern at each cycle length (beats)? Autocorrelation of the onset grid, 0..1."""
+    if len(events) < 8:
+        return {c: 0.0 for c in candidates}
+    n = int(max(b for b, _, _ in events) / GRID) + 1
+    grid = np.zeros(n)
+    for b, _, s in events:
+        grid[int(round(b / GRID))] = max(grid[int(round(b / GRID))], s)
+    grid = grid - grid.mean()
+    denom = float(np.dot(grid, grid)) or 1.0
+    out = {}
+    for c in candidates:
+        lag = int(c / GRID)
+        out[c] = round(max(0.0, float(np.dot(grid[:-lag], grid[lag:])) / denom), 3) if lag < n else 0.0
+    return out
+
+
+def beat_histogram(events: list[tuple[float, int, float]], cycle: int) -> dict[int, list[int]]:
+    """Per cluster: how many hits land on each beat position (whole beats) within the given cycle."""
+    hist = {}
+    for b, c, _ in events:
+        pos = int(b % cycle)
+        hist.setdefault(c, [0] * cycle)[pos] += 1
+    return hist
+
+
+def digest(bpm: float, profile: dict, events: list[tuple[float, int, float]], head: int = 32) -> dict:
+    """What Gemma actually reads: small, structured, evidence-rich."""
+    cs = cycle_scores(events)
+    best = max(cs, key=cs.get) if cs else 8
+    return {
+        "bpm": round(bpm, 1),
+        "n_events": len(events),
+        "clusters": {str(k): v for k, v in profile.items()},
+        "cycle_periodicity": {str(k): v for k, v in cs.items()},
+        "best_cycle_guess": best,
+        "beat_histogram_at_best_cycle": {str(k): v for k, v in beat_histogram(events, best).items()},
+        "opening_pattern": " ".join(f"{b:g}:{c}" for b, c, _ in events[:head]),
+    }

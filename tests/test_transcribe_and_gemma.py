@@ -47,3 +47,15 @@ def test_repair_json_handles_truncation_fences_and_trailing_commas():
     d = json.loads(repair_json('{"title": "x", "notes_en": "cut off mid sen'))
     assert d["title"] == "x"
     assert repair_json('{"ok": true}') == '{"ok": true}'
+
+
+def test_cycle_scores_prefer_true_period_and_digest_is_small():
+    from viral.transcribe import cycle_scores, digest
+    # 8-beat repeating pattern over 6 cycles
+    pat = [(0, 0, 1.0), (0.5, 2, .6), (1, 1, .8), (2, 0, .9), (2.5, 3, .6), (3, 1, .8), (3.5, 4, .4),
+           (4, 0, 1.0), (5, 1, .8), (6, 0, .9), (6.5, 3, .6), (7, 1, .8)]
+    ev = [(b + 8 * c, k, s) for c in range(6) for b, k, s in pat]
+    cs = cycle_scores(ev)
+    assert cs[8] >= cs[6] and cs[8] >= cs[7] and cs[8] > 0.5
+    d = digest(96, {0: {"count": 12}}, ev)
+    assert d["best_cycle_guess"] in (8, 16, 4) and len(json.dumps(d)) < 1500 and d["n_events"] == 72

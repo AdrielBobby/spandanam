@@ -14,6 +14,7 @@ from dataclasses import dataclass
 import httpx
 
 from .config import FINGERS, KITS
+from .transcribe import digest
 
 log = logging.getLogger(__name__)
 
@@ -53,8 +54,9 @@ def repair_json(text: str) -> str:
     except json.JSONDecodeError:
         return text
 
-STRUCT_SYS = """You are a Kerala percussion asan and music analyst. You receive: estimated bpm, timbre clusters 0-4 (0=lowest/bassiest,
-4=brightest) with counts, and quantised events (beat, cluster, strength). Optionally a short audio clip. Decide:
+STRUCT_SYS = """You are a Kerala percussion asan and music analyst. You receive a DIGEST of a recording: bpm, timbre clusters 0-4
+(0=lowest/bassiest, 4=brightest) with counts, periodicity scores for candidate cycle lengths (higher = the pattern repeats at that
+many beats), a per-cluster beat histogram, and the opening pattern as "beat:cluster". Optionally a short audio clip. Decide:
 - thaalam: name (e.g. chempada/adi 8, panchari 6, thriputa 7/14, ekam 4, roopakam 6/3, or 'free') and beats_per_cycle
 - finger_map: which cluster plays on which finger (thumb..pinky). Bass to thumb, brightest to pinky unless the music says otherwise.
   Give each finger a voice name from the chosen kit and a vaaythari syllable (tha ki ta ka dhi mi dhim thom num ri).
@@ -70,7 +72,10 @@ Example output: {"title":"Chempada practice","thaalam":"chempada (adi) 8","beats
  "finger_map":{"cluster_to_finger":{"0":0,"1":1,"2":2,"3":3,"4":4},"names":["valanthala","idanthala-open","idanthala-closed","rim","elathalam"],
  "syllables":["thom","tha","ki","ta","ri"]},"phrases":[[0,8],[0,16],[0,32]],
  "notes_en":"Steady 8-beat chempada: bass on 1 and 5, treble answers on the off-beats, cymbal colour on 4 and 8."}
-Rules: cluster 0 is the lowest timbre. Never output a finger index outside 0-4. Keep every key exactly as spelled above."""
+Rules: cluster 0 is the lowest timbre. Never output a finger index outside 0-4. Keep every key exactly as spelled above.
+Thaalam hints: panchari = 6 beats (pathikaalam very slow, later kaalams double); pandi = 7 (often felt as 14); chempada/adi = 8;
+ekam = 4; thriputa = 7; roopakam = 3/6. Use cycle_periodicity + beat_histogram as evidence; if unclear prefer best_cycle_guess.
+DO NOT list or echo the events. Output ONLY the small JSON object described — nothing else."""
 
 COACH_SYS = """You are a warm, precise percussion teacher (a Kerala asan). You receive DETERMINISTIC FACTS about one attempt —
 accuracy, weak fingers, weak syllables, dominant error (early/late/wrong_finger/missed), a recommended next bpm and phrase —
@@ -169,8 +174,11 @@ async def _chat(client: httpx.AsyncClient, url: str, model: str, system: str, us
 
 async def structure(client, url, model, bpm: float, profile: dict, events: list[tuple[float, int, float]],
                     wav: bytes | None, fallback: Structure) -> Structure:
-    user = json.dumps({"bpm": round(bpm, 1), "clusters": profile, "events": events[:240], "fingers": FINGERS})
-    c = await _chat(client, url, model, STRUCT_SYS, user, wav, 900)
+    user = (json.dumps({"digest": digest(bpm, profile, events), "fingers": FINGERS}) +
+            '\nFill exactly this JSON (no events, no extra keys): {"title":"","thaalam":"","beats_per_cycle":8,"kit":"chenda","kaalam":1,'
+            '"finger_map":{"cluster_to_finger":{"0":0,"1":1,"2":2,"3":3,"4":4},"names":["","","","",""],"syllables":["","","","",""]},'
+            '"phrases":[[0,8]],"notes_en":""}')
+    c = await _chat(client, url, model, STRUCT_SYS, user, wav, 450)
     try:
         return parse_structure(c, fallback) if c else fallback
     except (json.JSONDecodeError, ValueError, TypeError) as e:
