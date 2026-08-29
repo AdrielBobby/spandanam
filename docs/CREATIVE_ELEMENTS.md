@@ -9,7 +9,7 @@
 | 5 | **Hear the room** — Gemma 3n listens to a live drummer via mic and builds the lesson on the spot (no file) | ★★★★★ | Audio understanding of a live performance | USB mic | 1.5 h |
 | 6 | **Duet / melam mode** — two players (2 laptops or 2 gloves), Gemma referees sync and hands out parts | ★★★★★ | Multi‑player pattern reasoning, part assignment | 2nd input | 2 h |
 | 7 | **Kaalam ladder** — pass a phrase at 60 % → 80 % → 100 % → next kaalam (tempo doubling); Gemma decides readiness | ★★★★ | Readiness judgement from history | – | 1 h |
-| 8 | **Vaaythari karaoke** — asan chants the syllables (TTS) over the falling notes | ★★★★ | Syllable assignment (already in structure) | speaker | 45 min |
+| 8 | **Vaaythari karaoke** — ashaan chants the syllables (TTS) over the falling notes | ★★★★ | Syllable assignment (already in structure) | speaker | 45 min |
 | 9 | **Repeat after Maveli** (Onakalikal game) — Gemma generates ever‑harder 1‑cycle phrases; longest streak wins | ★★★★★ | Adaptive generation + banter | – | 1.5 h |
 | 10 | **Motion coach** — thumb IMU tilt/force explains weak or late hits ("wrist drops on the bass stroke") | ★★★★ | Cross‑modal explanation | IMU (have) | 1 h |
 | 11 | **Instrument morph** — Gemma re‑voices the same score for tabla/mridangam and renames syllables idiomatically | ★★★ | Cross‑tradition translation | – | 45 min |

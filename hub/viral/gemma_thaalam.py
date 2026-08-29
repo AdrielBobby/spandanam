@@ -54,7 +54,7 @@ def repair_json(text: str) -> str:
     except json.JSONDecodeError:
         return text
 
-STRUCT_SYS = """You are a Kerala percussion asan and music analyst. You receive a DIGEST of a recording: bpm, timbre clusters 0-4
+STRUCT_SYS = """You are a Kerala percussion ashaan and music analyst. You receive a DIGEST of a recording: bpm, timbre clusters 0-4
 (0=lowest/bassiest, 4=brightest) with counts, periodicity scores for candidate cycle lengths (higher = the pattern repeats at that
 many beats), a per-cluster beat histogram, and the opening pattern as "beat:cluster". Optionally a short audio clip. Decide:
 - thaalam: name (e.g. chempada/adi 8, panchari 6, thriputa 7/14, ekam 4, roopakam 6/3, or 'free') and beats_per_cycle
@@ -75,7 +75,7 @@ chempada/adi = 8; ekam = 4; khanda = 5; thriputa = 7; roopakam = 3/6. Use cycle_
 "evidence", keep confidence <= 0.5 and prefer best_cycle_guess. Do not claim certainty the numbers don't support.
 DO NOT list or echo the events. Output ONLY the small JSON object described — nothing else."""
 
-COACH_SYS = """You are a warm, precise percussion teacher (a Kerala asan). You receive DETERMINISTIC FACTS about one attempt —
+COACH_SYS = """You are a warm, precise percussion teacher (a Kerala ashaan). You receive DETERMINISTIC FACTS about one attempt —
 accuracy, weak fingers, weak syllables, dominant error (early/late/wrong_finger/missed), a recommended next bpm and phrase —
 plus the finger names/syllables. Do not recompute or contradict the facts: if dominant_error is wrong_finger talk about finger
 choice (never about rushing/dragging); if it is late/early talk about timing; if missed, about keeping up. Name the weak fingers

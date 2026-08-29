@@ -33,7 +33,7 @@ LADDER = [(["tha", "ki", "ta"], 66), (["dhim", "tha", "ka", "ta"], 76), (["tha",
           (["dhim", "tha", "ka", "tha", "ki", "ta"], 96), (["thom", "ta", "ta", "ki", "ta", "ka"], 108),
           (["dhim", "tha", "ka", "dhi", "mi", "tha", "ki", "ta"], 120), (["thom", "ka", "ta", "ki", "ta", "ka", "dhi", "mi"], 136)]
 BANTER = ["Sheri, let's begin!", "Kollam! A little faster now.", "Maveli is watching your ring finger…",
-          "Now we're drumming, mone!", "Onam spirit! Keep it steady.", "Legend level. Don't blink.", "You might be the next asan."]
+          "Now we're drumming, mone!", "Onam spirit! Keep it steady.", "Legend level. Don't blink.", "You might be the next ashaan."]
 
 
 @dataclass(frozen=True)

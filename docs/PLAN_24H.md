@@ -17,6 +17,6 @@
 ## Demo script (3 min)
 1. "Air drums exist. This one *teaches* — and it understands Kerala rhythm." Fathima wears the glove; speaker plays chenda as she strikes the air; fingers pulse the tempo.
 2. Adriel uploads a 30 s Panchari clip → status "transcribing… Gemma structuring" → dashboard shows thaalam name, five fingers named with syllables, phrases.
-3. Fathima practises phrase 1 at 80 %: LEDs cue, notes fall, PERFECT/GOOD flash; she misses on purpose → WRONG FINGER; end → stars; asan coaches in Malayalam, picks the drill.
+3. Fathima practises phrase 1 at 80 %: LEDs cue, notes fall, PERFECT/GOOD flash; she misses on purpose → WRONG FINGER; end → stars; ashaan coaches in Malayalam, picks the drill.
 4. Ryyan types a brief → Gemini composes a new piece in 10 s → Fathima sight‑reads it live.
 5. Game: a judge tries Repeat‑after‑Maveli. Pull the Wi‑Fi: learn + practice + coach still run (Gemma on the Pi).

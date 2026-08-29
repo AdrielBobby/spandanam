@@ -24,6 +24,7 @@ from .gemma_compose import compose_gemma
 from .hardware import Glove
 from .imu import MPU6050Reader
 from .learn import learn_from_file
+from .malayalam import LABELS_ML, coach_ml, structure_ml
 from .metronome import run_metronome
 from .score import Score, score_from_dict
 from .sound import Sampler
@@ -147,6 +148,10 @@ class Hub:
             await self.broadcast({"type": "practice_end", "summary": self.last_summary})
             facts = (analysis_for_coach(analysis, sc.bpm) | {"points": self.last_summary["points"], "stars": self.last_summary["stars"]}) if analysis else self.last_summary
             fb = await coach(self.http, self.cfg.ollama_url, self.cfg.gemma_model, facts, sc.finger_map.names, sc.finger_map.syllables)
+            if analysis:                                         # accurate Malayalam from facts; Gemma's Manglish kept separately
+                ml = coach_ml(analysis.accepted_accuracy_pct, analysis.dominant_error, list(analysis.weak_fingers),
+                              list(analysis.weak_bols), fb.get("drill_bpm") or analysis.recommended_tempo_bpm, fb.get("drill_phrase"))
+                fb = {**fb, "say_manglish": fb.get("say_ml", ""), "say_ml": ml}
             await self.broadcast({"type": "coach", **fb})
         self.mode = "idle"
 
@@ -166,7 +171,7 @@ def create_app(cfg: Config) -> FastAPI:
 
     @app.get("/api/state")
     async def state():
-        return {"mode": hub.mode, "bpm": hub.bpm, "cycle": hub.cycle, "kit": hub.sampler.kit, "kits": KITS, "keys": FINGER_KEYS,
+        return {"mode": hub.mode, "bpm": hub.bpm, "cycle": hub.cycle, "kit": hub.sampler.kit, "kits": KITS, "keys": FINGER_KEYS, "labels_ml": LABELS_ML,
                 "score": json.loads(hub.score.to_json()) if hub.score else None, "dry": cfg.dry}
 
     @app.post("/api/learn")
@@ -179,8 +184,10 @@ def create_app(cfg: Config) -> FastAPI:
         except Exception as e:
             log.exception("learn failed"); return JSONResponse({"ok": False, "error": str(e)}, 500)
         hub.score = score; hub.sampler.set_kit(score.kit)
-        await hub.broadcast({"type": "score", "score": json.loads(score.to_json()), "gemma": st.notes_en})
-        return {"ok": True, "notes": len(score.notes), "thaalam": score.thaalam, "phrases": score.phrases}
+        await hub.broadcast({"type": "score", "score": json.loads(score.to_json()), "gemma": st.notes_en,
+                             "evidence": st.evidence, "confidence": st.confidence,
+                             "summary_ml": structure_ml(score.thaalam, score.beats_per_cycle, len(score.notes), st.confidence)})
+        return {"ok": True, "notes": len(score.notes), "thaalam": score.thaalam, "phrases": score.phrases, "confidence": st.confidence}
 
     @app.post("/api/compose")
     async def compose_ep(body: dict):

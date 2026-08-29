@@ -18,7 +18,7 @@
 - Pass the audio clip: instrument identity (chenda vs tabla) is far more reliable from sound than from centroid numbers.
 
 ## Speech
-`coach()` returns `say_ml`; pipe it through espeak‑ng (`-v ml`) or Piper for a spoken asan. Optional, 20 lines.
+`coach()` returns `say_ml`; pipe it through espeak‑ng (`-v ml`) or Piper for a spoken ashaan. Optional, 20 lines.
 
 ## Stage line
 "Every hit is judged by math in under a millisecond — we don't dress that up as AI. Gemma does what math can't: it listens to a track and understands it as a thaalam, decides how it lives on five fingers, cuts it into lessons, and coaches you in Malayalam — on this Pi, offline. Gemini writes new music for it."
