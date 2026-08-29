@@ -183,3 +183,12 @@ def pick_cycle(scores: dict[int, float], tolerance: float = 0.85) -> int:
     """Shortest cycle within `tolerance` of the best score: the true period; its multiples are trivially periodic too."""
     mx = max(scores.values()) if scores else 0.0
     return min((c for c, v in scores.items() if v >= tolerance * mx), default=8) if mx > 0 else 8
+
+
+def normalize_octave(tr: Transcription, bpm: float, scores: dict[int, float], max_bpm: float = 160.0) -> tuple[float, dict[int, float]]:
+    """Melam is counted at a walking/moderate pulse. If the refined tempo is very fast and the winning cycle is even,
+    fold one octave down (176 bpm × 16 → 88 bpm × 8). Scores are recomputed at the folded tempo."""
+    while bpm > max_bpm and pick_cycle(scores) % 2 == 0:
+        bpm /= 2
+        scores = cluster_cycle_scores(quantize_onsets(tr, bpm))
+    return bpm, scores

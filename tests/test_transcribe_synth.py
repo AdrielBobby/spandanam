@@ -44,3 +44,11 @@ def test_reconcile_cycle_overrides_unrelated_gemma_cycle_when_evidence_strong():
     assert weak.beats_per_cycle == 12                       # weak evidence: Gemma's call stands
     rel = reconcile_cycle(replace(st, beats_per_cycle=16), {8: 0.6, 16: 0.4}, 96)
     assert rel.beats_per_cycle == 16                        # related (2x) allowed
+
+
+def test_normalize_octave_folds_fast_even_cycles(tmp_path):
+    from viral.transcribe import transcribe, refine_tempo, normalize_octave, pick_cycle
+    from viral.synth_track import render
+    p = tmp_path / "t.wav"; sf.write(p, render(88, 4, "tabla"), SR)
+    tr = transcribe(str(p)); bpm, sc = refine_tempo(tr); bpm2, sc2 = normalize_octave(tr, bpm, sc)
+    assert bpm2 <= 160 and abs(bpm2 - 88) < 4 and pick_cycle(sc2) == 8

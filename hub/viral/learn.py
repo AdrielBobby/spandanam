@@ -11,7 +11,7 @@ import httpx
 from .config import FINGER_COLORS
 from .gemma_thaalam import Structure, default_structure, structure
 from .score import FingerMap, Note, Score
-from .transcribe import quantize_onsets, refine_tempo, transcribe
+from .transcribe import normalize_octave, quantize_onsets, refine_tempo, transcribe
 
 log = logging.getLogger(__name__)
 
@@ -52,7 +52,7 @@ def _clip_wav(path: str, seconds: float = 6.0) -> bytes | None:
         log.debug("clip failed: %s", e); return None
 
 
-ALGO_VERSION = "v3-shortest-cycle"     # bump when transcription/digest logic changes so stale caches are ignored
+ALGO_VERSION = "v4-octave-norm"     # bump when transcription/digest logic changes so stale caches are ignored
 
 
 def _cache_path(path: Path, model: str) -> Path:
@@ -77,6 +77,7 @@ async def learn_from_file(path: Path, ollama_url: str, model: str, use_audio: bo
             log.warning("cache unreadable (%s), recomputing", e)
     tr = transcribe(str(path))
     bpm, scores = refine_tempo(tr)                      # octave + drift corrected
+    bpm, scores = normalize_octave(tr, bpm, scores)     # count at a moderate pulse (176×16 -> 88×8)
     events = quantize_onsets(tr, bpm)
     n_beats = (events[-1][0] + 1) if events else 8.0
     fb = default_structure(bpm, n_beats)
