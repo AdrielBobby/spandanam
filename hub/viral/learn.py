@@ -82,7 +82,7 @@ def _clip_wav(path: str, seconds: float = 6.0) -> bytes | None:
         log.debug("clip failed: %s", e); return None
 
 
-ALGO_VERSION = "v7-kit-envelope"     # bump when transcription/digest logic changes so stale caches are ignored
+ALGO_VERSION = "v8-synth-default"     # bump when transcription/digest logic changes so stale caches are ignored
 
 
 def _cache_path(path: Path, model: str) -> Path:
@@ -115,13 +115,15 @@ async def learn_from_file(path: Path, ollama_url: str, model: str, use_audio: bo
         st = await structure(client, ollama_url, model, bpm, tr.cluster_profile, events, _clip_wav(str(path)) if use_audio else None, fb, scores)
     st = reconcile_cycle(st, scores, bpm)
     score = build_score(events, st, bpm)
-    try:                                                # authentic sounds: sample the real strikes from this recording
-        from .sample_kit import build_kit
-        kit_dir = build_kit(path, tr, st.cluster_to_finger, f"track_{path.stem}")
+    import os
+    if os.environ.get("REAL_KITS") == "1":              # opt-in: sample real strikes from this recording (off by default — synth kits sound better)
+        try:
+            from .sample_kit import build_kit
+            kit_dir = build_kit(path, tr, st.cluster_to_finger, f"track_{path.stem}")
+        except Exception as e:
+            kit_dir = None; log.warning("real kit not built: %s", e)
         if kit_dir:
             score = Score(score.title, score.bpm, score.beats_per_cycle, score.notes, score.finger_map, kit_dir.name, score.thaalam, score.phrases)
-    except Exception as e:
-        log.warning("real kit not built: %s", e)
     if score.title == "untitled":
         score = Score(path.stem, score.bpm, score.beats_per_cycle, score.notes, score.finger_map, score.kit, score.thaalam, score.phrases)
     if use_cache:

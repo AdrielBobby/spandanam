@@ -10,25 +10,84 @@ log = logging.getLogger(__name__)
 SR = 22050
 
 
-def _env(n: int, decay: float) -> np.ndarray:
-    return np.exp(-np.linspace(0, decay, n))
-
-
-def _drum(freq: float, dur: float, decay: float, noise: float, pitch_drop: float = 0.0) -> np.ndarray:
+def _modal_drum(f0: float, dur: float, modes: tuple[tuple[float, float, float], ...], noise: float = 0.2,
+                noise_dur: float = 0.01, pitch_drop: float = 0.0, click: float = 0.3, seed: int = 0) -> np.ndarray:
+    """Physically-flavoured membrane: sum of overtone modes (ratio, amplitude, decay_s), a downward pitch glide on impact,
+    a short filtered noise burst for the stick/skin contact, and a tiny click. Far closer to a drum than sine + noise."""
     n = int(SR * dur); t = np.arange(n) / SR
-    f = freq * (1 - pitch_drop * t / dur)
-    tone = np.sin(2 * np.pi * np.cumsum(f) / SR)
-    nz = np.random.default_rng(0).standard_normal(n)
-    return ((1 - noise) * tone + noise * nz) * _env(n, decay)
+    glide = 1.0 + pitch_drop * np.exp(-t / 0.03)                      # quick pitch drop after the hit
+    out = np.zeros(n)
+    for ratio, amp, decay in modes:
+        phase = 2 * np.pi * np.cumsum(f0 * ratio * glide) / SR
+        out += amp * np.sin(phase) * np.exp(-t / decay)
+    rng = np.random.default_rng(seed)
+    nz = rng.standard_normal(n) * np.exp(-t / noise_dur)
+    nz = np.convolve(nz, np.ones(3) / 3, mode="same")                  # soften the burst
+    out += noise * nz
+    out[: int(0.0008 * SR)] += click * np.linspace(1, 0, int(0.0008 * SR))
+    out *= np.minimum(1.0, t / 0.0015)                                  # 1.5 ms attack, no click at t=0
+    out /= max(1e-6, np.abs(out).max())
+    return out.astype(np.float32)
 
 
-# per kit: 5 voices -> (freq, dur, decay, noise, pitch_drop)
+# Circular-membrane mode ratios (1, 1.59, 2.14, 2.30, 2.65, 2.92) with per-instrument tuning.
+CHENDA_VALANTHALA = (( 1.0, 1.0, 0.45), (1.59, 0.55, 0.22), (2.14, 0.35, 0.14), (2.65, 0.2, 0.09))
+CHENDA_IDANTHALA  = (( 1.0, 1.0, 0.16), (1.59, 0.7, 0.10), (2.14, 0.5, 0.07), (2.92, 0.3, 0.05), (3.6, 0.2, 0.03))
+MRIDANGAM_THOM    = (( 1.0, 1.0, 0.9),  (2.0, 0.25, 0.4),  (3.0, 0.1, 0.2))                       # harmonic (loaded head)
+MRIDANGAM_NAM     = (( 1.0, 1.0, 0.5),  (2.0, 0.6, 0.35),  (3.0, 0.35, 0.2), (4.0, 0.2, 0.12))
+TABLA_BAYAN       = (( 1.0, 1.0, 0.6),  (2.0, 0.15, 0.3))
+TABLA_NA          = (( 1.0, 1.0, 0.45), (2.0, 0.7, 0.35),  (3.0, 0.4, 0.22), (4.0, 0.25, 0.15), (5.0, 0.1, 0.1))
+KICK              = (( 1.0, 1.0, 0.35), (1.5, 0.2, 0.08))
+SNARE             = (( 1.0, 0.8, 0.12), (1.6, 0.6, 0.08), (2.3, 0.4, 0.05))
+
+# per kit: 5 voices low→high. (f0, dur, modes, noise, noise_dur, pitch_drop, click)
 KIT_PARAMS = {
-    "chenda":    [(110, .5, 8, .15, .3), (420, .25, 14, .35, .2), (700, .12, 30, .5, .1), (1400, .1, 40, .7, 0), (300, .3, 10, .6, 0)],
-    "mridangam": [(90, .6, 6, .05, .4), (260, .3, 12, .1, .1), (520, .25, 14, .15, .1), (900, .12, 35, .5, 0), (180, .2, 20, .3, .2)],
-    "tabla":     [(80, .5, 6, .05, .5), (330, .3, 10, .1, 0), (600, .35, 8, .05, 0), (1100, .1, 40, .6, 0), (450, .1, 40, .7, 0)],
-    "kit":       [(60, .4, 10, .1, .6), (200, .25, 16, .8, .2), (3000, .08, 60, 1.0, 0), (150, .35, 10, .2, .3), (2500, .6, 5, .9, 0)],
+    "chenda": [
+        (95,  1.2, CHENDA_VALANTHALA, 0.25, 0.012, 0.35, 0.4),    # valanthala – deep bass head
+        (330, 0.5, CHENDA_IDANTHALA,  0.30, 0.008, 0.25, 0.6),    # idanthala open – bright, ringing
+        (520, 0.22, CHENDA_IDANTHALA, 0.45, 0.006, 0.15, 0.8),    # idanthala closed – damped, crack
+        (900, 0.12, ((1.0, 1.0, 0.04), (2.3, 0.6, 0.02)), 0.8, 0.004, 0.0, 1.0),   # rim / stick on edge
+        (2400, 0.9, ((1.0, 1.0, 0.7), (2.7, 0.5, 0.5), (4.1, 0.3, 0.35), (6.3, 0.15, 0.2)), 0.35, 0.003, 0.0, 0.5),  # elathalam – cymbal-like
+    ],
+    "mridangam": [
+        (78,  1.4, MRIDANGAM_THOM, 0.08, 0.010, 0.6, 0.2),        # thom – gliding bass
+        (245, 0.8, MRIDANGAM_NAM,  0.10, 0.006, 0.05, 0.4),       # nam – harmonic ring
+        (490, 0.45, MRIDANGAM_NAM, 0.15, 0.005, 0.03, 0.5),       # dhin
+        (700, 0.10, ((1.0, 1.0, 0.03), (2.0, 0.5, 0.02)), 0.7, 0.004, 0.0, 1.0),   # chapu – slap
+        (180, 0.18, ((1.0, 1.0, 0.06), (1.6, 0.5, 0.04)), 0.4, 0.006, 0.2, 0.6),   # arai – muted
+    ],
+    "tabla": [
+        (70,  1.1, TABLA_BAYAN, 0.06, 0.010, 0.8, 0.2),           # ge – bayan with glide
+        (300, 0.7, TABLA_NA,    0.12, 0.005, 0.0, 0.5),           # na
+        (600, 0.9, TABLA_NA,    0.08, 0.004, 0.0, 0.4),           # tin – high ringing
+        (1000, 0.08, ((1.0, 1.0, 0.03),), 0.8, 0.004, 0.0, 1.0),  # te – closed slap
+        (450, 0.10, ((1.0, 1.0, 0.04), (2.1, 0.5, 0.03)), 0.7, 0.004, 0.0, 0.9),   # ke
+    ],
+    "kit": [
+        (55,  0.6, KICK,  0.10, 0.008, 0.9, 0.5),                 # kick
+        (190, 0.35, SNARE, 0.9, 0.09, 0.15, 0.7),                 # snare – long noise body
+        (3200, 0.10, ((1.0, 1.0, 0.03), (1.8, 0.6, 0.02)), 1.0, 0.03, 0.0, 0.6),   # hi-hat closed
+        (140, 0.5, ((1.0, 1.0, 0.3), (1.5, 0.4, 0.15)), 0.2, 0.008, 0.35, 0.5),    # tom
+        (2600, 1.6, ((1.0, 1.0, 1.2), (2.6, 0.6, 0.9), (4.2, 0.3, 0.6)), 0.5, 0.02, 0.0, 0.4),  # ride
+    ],
 }
+
+
+def _drum(*p) -> np.ndarray:
+    return _modal_drum(*p)
+
+
+def render_kit_preview(kit: str, path: str, bpm: float = 100) -> None:
+    """Write a short audition file: each voice twice, then a little pattern."""
+    import soundfile as sf
+    voices = [_drum(*p) for p in KIT_PARAMS[kit]]
+    beat = 60 / bpm; seq = [(i * beat * 0.75, v) for i, v in enumerate([0, 0, 1, 1, 2, 2, 3, 3, 4, 4])]
+    pat = [0, 2, 1, 2, 0, 3, 1, 4, 0, 2, 1, 2, 0, 3, 4, 4]
+    seq += [(8 * beat + i * beat / 2, v) for i, v in enumerate(pat)]
+    total = int(SR * (8 * beat + len(pat) * beat / 2 + 2)); out = np.zeros(total, dtype=np.float32)
+    for t, v in seq:
+        i = int(t * SR); w = voices[v]; out[i:i + len(w)] += w[: max(0, total - i)] * 0.8
+    sf.write(path, out / max(1e-6, np.abs(out).max()) * 0.9, SR)
 
 
 KITS_DIR = Path(__file__).resolve().parents[2] / "assets" / "kits"
