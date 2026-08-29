@@ -20,6 +20,7 @@ from .bridge import analysis_for_coach, analyze_attempt, phrase_to_score
 from .gemma_game import next_round
 from .gemma_thaalam import coach
 from .gemini_compose import compose
+from .gemma_compose import compose_gemma
 from .hardware import Glove
 from .imu import MPU6050Reader
 from .learn import learn_from_file
@@ -179,14 +180,22 @@ def create_app(cfg: Config) -> FastAPI:
 
     @app.post("/api/compose")
     async def compose_ep(body: dict):
+        brief, kit, thaalam = body.get("brief", "playful Onam melam"), body.get("kit", "chenda"), body.get("thaalam", "chempada 8")
+        cycles, bpm = int(body.get("cycles", 4)), float(body.get("bpm", 90))
+        composer, err = "Gemini (" + cfg.gemini_model + ")", None
         try:
-            sc = compose(body.get("brief", "playful Onam melam"), body.get("kit", "chenda"), body.get("thaalam", "chempada 8"),
-                         int(body.get("cycles", 4)), float(body.get("bpm", 90)), cfg.gemini_model)
-        except Exception as e:
-            return JSONResponse({"ok": False, "error": str(e)}, 500)
+            sc = compose(brief, kit, thaalam, cycles, bpm, cfg.gemini_model)
+        except Exception as e:                                   # quota / offline -> compose on-device with Gemma
+            err = str(e)[:160]; log.warning("Gemini compose failed (%s); falling back to Gemma", err)
+            await hub.broadcast({"type": "status", "text": "Gemini unavailable — composing on-device with Gemma…"})
+            try:
+                sc = await compose_gemma(hub.http, cfg.ollama_url, cfg.gemma_model, brief, kit, thaalam, cycles, bpm)
+                composer = "Gemma on-device (" + cfg.gemma_model + ")"
+            except Exception as e2:
+                return JSONResponse({"ok": False, "error": f"gemini: {err} | gemma: {str(e2)[:160]}"}, 500)
         hub.score = sc; hub.sampler.set_kit(sc.kit)
-        await hub.broadcast({"type": "score", "score": json.loads(sc.to_json()), "gemma": "composed by Gemini"})
-        return {"ok": True, "notes": len(sc.notes)}
+        await hub.broadcast({"type": "score", "score": json.loads(sc.to_json()), "gemma": f"composed by {composer}"})
+        return {"ok": True, "notes": len(sc.notes), "composer": composer, "gemini_error": err}
 
     @app.websocket("/ws")
     async def ws(sock: WebSocket):
