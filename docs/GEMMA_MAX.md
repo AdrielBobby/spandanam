@@ -31,3 +31,10 @@
 ```
 Measured from the Pi through the tunnel to an M-series Mac: coach ≈ 7 s, structure ≈ 10–20 s. Same code path as fully on-Pi; only `OLLAMA_URL` changes.
 Judging-day plan: laptop Gemma via tunnel for speed; show `ollama ps` on the laptop and the Pi's `OLLAMA_URL` so it's transparent. If e2b finishes and runs acceptably, demo one round fully on the Pi.
+
+## Pi service
+```bash
+sudo cp scripts/thaalam.service /etc/systemd/system/ && sudo systemctl daemon-reload && sudo systemctl enable --now thaalam
+sudo systemctl edit thaalam     # drop the --dry once GPIO is wired: Environment=THAALAM_ARGS=
+journalctl -u thaalam -f
+```

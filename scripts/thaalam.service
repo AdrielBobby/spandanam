@@ -1,0 +1,15 @@
+[Unit]
+Description=Thaalam dashboard (air-percussion glove)
+After=network-online.target ollama.service
+Wants=network-online.target
+
+[Service]
+User=ryyan
+WorkingDirectory=/home/ryyan/thaalam
+Environment=THAALAM_ARGS=--dry
+ExecStart=/bin/bash -c '/home/ryyan/thaalam/scripts/pi_run.sh $THAALAM_ARGS'
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
