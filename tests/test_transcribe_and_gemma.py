@@ -26,3 +26,14 @@ def test_structure_parse_and_build_score():
     sc = build_score([(0.0, 0, 1.0), (1.0, 4, 0.5)], st, 90)
     assert sc.notes[0].finger == 4 and sc.notes[0].label == "dhi" and sc.notes[1].finger == 0 and sc.thaalam == "panchari (6)"
     assert parse_structure("{}", fb).kit == "chenda"
+
+
+def test_normalize_misspelled_keys_and_auto_phrases():
+    from viral.gemma_thaalam import auto_phrases, normalize_keys
+    d = normalize_keys({"kaaalam": 2, "finger_map": {"syllaibles": ["a"], "cluster_to_fingr": {"0": 1}}, "phrses": [[0, 8]]})
+    assert d["kaalam"] == 2 and d["finger_map"]["syllables"] == ["a"] and d["finger_map"]["cluster_to_finger"] == {"0": 1} and "phrases" in d
+    assert auto_phrases(32, 8) == ((0.0, 8.0), (0.0, 16.0), (0.0, 32.0))
+    assert auto_phrases(6, 6) == ((0.0, 6.0),)
+    fb = default_structure(90, 32)
+    st = parse_structure(json.dumps({"beats_per_cycle": 8, "phrases": [[0, 8]]}), fb)
+    assert len(st.phrases) >= 2

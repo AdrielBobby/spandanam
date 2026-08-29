@@ -17,6 +17,11 @@ from .config import FINGERS, KITS
 
 log = logging.getLogger(__name__)
 
+
+def clean(text: str) -> str:
+    """Strip sentencepiece artifacts Gemma sometimes leaks into JSON strings."""
+    return text.replace("\u2581", " ").replace("  ", " ")
+
 STRUCT_SYS = """You are a Kerala percussion asan and music analyst. You receive: estimated bpm, timbre clusters 0-4 (0=lowest/bassiest,
 4=brightest) with counts, and quantised events (beat, cluster, strength). Optionally a short audio clip. Decide:
 - thaalam: name (e.g. chempada/adi 8, panchari 6, thriputa 7/14, ekam 4, roopakam 6/3, or 'free') and beats_per_cycle
@@ -32,7 +37,7 @@ COACH_SYS = """You are a warm, precise percussion teacher (a Kerala asan). You r
 accuracy, weak fingers, weak syllables, dominant error (early/late/wrong_finger/missed), a recommended next bpm and phrase —
 plus the finger names/syllables. Do not recompute or contradict the facts; turn them into teaching: one specific observation,
 one physical fix (finger/wrist/breathing), one drill using the recommended phrase and bpm. Return ONLY JSON:
-{"say_en":"<=30 words","say_ml":"<=30 words in Malayalam","drill_phrase":index,"drill_bpm":number,"focus":"timing|finger|dynamics|reward"}"""
+{"say_en":"<=30 words","say_ml":"<=30 words of spoken Malayalam written in Latin letters (Manglish), e.g. 'ring finger pathukke, 80 bpm il thudanguka'","drill_phrase":index,"drill_bpm":number,"focus":"timing|finger|dynamics|reward"}"""
 
 
 @dataclass(frozen=True)
@@ -57,16 +62,52 @@ def default_structure(bpm_hint: float, n_beats: float) -> Structure:
                      "default mapping", "{}")
 
 
+EXPECTED_KEYS = ("title", "thaalam", "beats_per_cycle", "kit", "kaalam", "finger_map", "phrases", "notes_en",
+                 "cluster_to_finger", "names", "syllables", "say_en", "say_ml", "drill_phrase", "drill_bpm", "focus")
+
+
+def _similar(a: str, b: str) -> bool:
+    from difflib import SequenceMatcher
+    return SequenceMatcher(a=a.lower(), b=b.lower()).ratio() >= 0.8
+
+
+def normalize_keys(obj):
+    """Small models misspell keys ('kaaalam', 'syllaibles'). Snap any key to the closest expected one, recursively."""
+    if isinstance(obj, dict):
+        out = {}
+        for k, v in obj.items():
+            nk = k if k in EXPECTED_KEYS else next((e for e in EXPECTED_KEYS if _similar(k, e)), k)
+            out[nk] = normalize_keys(v)
+        return out
+    if isinstance(obj, list):
+        return [normalize_keys(x) for x in obj]
+    return obj
+
+
+def auto_phrases(n_beats: float, cycle: int) -> tuple[tuple[float, float], ...]:
+    """Cycle-aligned practice segments of growing length: 1 cycle, 2 cycles, ... up to the whole piece (max 6)."""
+    total = max(cycle, int(round(n_beats / cycle)) * cycle)
+    out, span = [], cycle
+    while span <= total and len(out) < 6:
+        out.append((0.0, float(span))); span *= 2
+    if not out or out[-1][1] < total:
+        out.append((0.0, float(total)))
+    return tuple(out[:6])
+
+
 def parse_structure(content: str, fallback: Structure) -> Structure:
-    d = json.loads(content)
+    d = normalize_keys(json.loads(content))
     fm = d.get("finger_map", {})
     c2f = {int(k): int(v) % 5 for k, v in fm.get("cluster_to_finger", {}).items()} or fallback.cluster_to_finger
     kit = d.get("kit") if d.get("kit") in KITS else fallback.kit
     names = tuple((fm.get("names") or KITS[kit]["voices"])[:5]); names = names if len(names) == 5 else tuple(KITS[kit]["voices"])
     syl = tuple((fm.get("syllables") or fallback.syllables)[:5]); syl = syl if len(syl) == 5 else fallback.syllables
-    phrases = tuple((float(a), float(b)) for a, b in d.get("phrases", []) if b > a) or fallback.phrases
+    phrases = tuple((float(a), float(b)) for a, b in d.get("phrases", []) if b > a)
+    cycle = int(d.get("beats_per_cycle", fallback.beats_per_cycle)) or 8
+    if len(phrases) < 2:
+        phrases = auto_phrases(max(fallback.phrases[-1][1] if fallback.phrases else cycle, cycle), cycle)
     return Structure(str(d.get("title", fallback.title)), str(d.get("thaalam", fallback.thaalam)),
-                     int(d.get("beats_per_cycle", fallback.beats_per_cycle)) or 8, kit, int(d.get("kaalam", 1)),
+                     cycle, kit, int(d.get("kaalam", 1)),
                      c2f, names, syl, phrases, str(d.get("notes_en", "")), content)
 
 
@@ -78,7 +119,7 @@ async def _chat(client: httpx.AsyncClient, url: str, model: str, system: str, us
             "messages": [{"role": "system", "content": system}, msg]}
     try:
         r = await client.post(f"{url}/api/chat", json=body, timeout=60.0); r.raise_for_status()
-        return r.json()["message"]["content"]
+        return clean(r.json()["message"]["content"])
     except (httpx.HTTPError, KeyError) as e:
         log.warning("gemma failed: %s", e); return None
 
@@ -96,6 +137,6 @@ async def structure(client, url, model, bpm: float, profile: dict, events: list[
 async def coach(client, url, model, summary: dict, names: tuple[str, ...], syllables: tuple[str, ...]) -> dict:
     c = await _chat(client, url, model, COACH_SYS, json.dumps({"attempt": summary, "names": names, "syllables": syllables}), None, 220)
     try:
-        return json.loads(c) if c else {}
+        return normalize_keys(json.loads(c)) if c else {}
     except json.JSONDecodeError:
         return {}
