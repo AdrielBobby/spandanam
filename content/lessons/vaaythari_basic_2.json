@@ -1,0 +1,16 @@
+{
+  "id": "vaaythari_basic_2",
+  "name": "Basic Vaaythari 2 (with pinky)",
+  "level": "beginner",
+  "tempo_bpm": 60,
+  "phrase": ["dhim", "tha", "din", "ka", "ta"],
+  "finger_map": {
+    "dhim": "thumb",
+    "tha": "index",
+    "din": "pinky",
+    "ka": "ring",
+    "ta": "middle"
+  },
+  "repeats": 4,
+  "focus": "accuracy"
+}

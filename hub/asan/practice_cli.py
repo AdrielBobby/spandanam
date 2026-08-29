@@ -27,13 +27,28 @@ from .practice import (
     summarize,
     to_relative_event,
 )
-from .scheduler import ExpectedEvent, ScoreResult, TimingWindow, build_schedule, format_lanes, score_events
+from .lessons import load_lesson
+from .scheduler import ExpectedEvent, ScoreResult, TimingWindow, beat_duration_ms, format_lanes, score_events
 
-PHRASE = ["dhim", "tha", "ka", "ta", "ki"]
+DEFAULT_LESSON_ID = "vaaythari_basic_1"
 POLL_INTERVAL_S = 0.005  # 5ms: responsive enough, negligible CPU for a hackathon prototype
 
 # repo_root/logs/practice.jsonl — one JSON line per completed round, read by dashboard/server.py.
 LOG_PATH = Path(__file__).resolve().parents[2] / "logs" / "practice.jsonl"
+
+
+def build_lesson_schedule(
+    phrase: Sequence[str], finger_map: dict[str, str], tempo_bpm: float, start_time_ms: int = 0
+) -> tuple[ExpectedEvent, ...]:
+    """Build the expected-event schedule for a lesson, sourcing each bol's finger from
+    the lesson's own finger_map (already validated by lessons.load_lesson) instead of
+    the global config.SYLLABLE_FINGER that scheduler.build_schedule() uses — this is
+    what lets each lesson define its own bol-to-finger mapping."""
+    bd = beat_duration_ms(tempo_bpm)
+    return tuple(
+        ExpectedEvent(i, bol, finger_map[bol], start_time_ms + i * bd, bd)
+        for i, bol in enumerate(phrase)
+    )
 
 
 def positive_bpm(value: str) -> float:
@@ -66,7 +81,17 @@ def non_negative_cue_advance_ms(value: str) -> int:
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     ap = argparse.ArgumentParser(description="Interactive five-finger vaaythari practice round (Windows console).")
-    ap.add_argument("--bpm", type=positive_bpm, default=60.0, help="tempo in beats per minute (must be > 0)")
+    ap.add_argument(
+        "--lesson",
+        default=DEFAULT_LESSON_ID,
+        help=f"lesson id to load from content/lessons/ (default: {DEFAULT_LESSON_ID!r})",
+    )
+    ap.add_argument(
+        "--bpm",
+        type=positive_bpm,
+        default=None,
+        help="tempo in beats per minute (must be > 0); defaults to the selected lesson's tempo_bpm if omitted",
+    )
     ap.add_argument("--countdown", type=non_negative_countdown, default=3, help="countdown seconds (must be >= 0)")
     ap.add_argument(
         "--lead-in-ms",
@@ -204,10 +229,18 @@ def append_log_entry(entry: dict, path: Path = LOG_PATH) -> None:
 
 def main() -> None:
     args = parse_args()
-    window = TimingWindow()
-    schedule = build_schedule(PHRASE, args.bpm, start_time_ms=args.lead_in_ms)
+    lesson = load_lesson(args.lesson)
+    phrase = lesson["phrase"]
+    finger_map = lesson["finger_map"]
+    tempo_bpm = args.bpm if args.bpm is not None else lesson["tempo_bpm"]
 
-    print(f"Phrase {PHRASE} @ {args.bpm} bpm - 5 finger lanes (times include the {args.lead_in_ms}ms lead-in):")
+    window = TimingWindow()
+    schedule = build_lesson_schedule(phrase, finger_map, tempo_bpm, start_time_ms=args.lead_in_ms)
+
+    print(
+        f"Lesson {lesson['id']!r} ({lesson['name']}) - phrase {phrase} @ {tempo_bpm} bpm - "
+        f"5 finger lanes (times include the {args.lead_in_ms}ms lead-in):"
+    )
     print(format_lanes(schedule))
     print()
     print("Keys: 1=thumb  2=index  3=middle  4=ring  5=pinky   q/Esc=quit")
@@ -232,7 +265,7 @@ def main() -> None:
     for key, value in summarize(results).as_dict().items():
         print(f"{key}: {value}")
 
-    analysis = analyze(results, PHRASE, args.bpm)
+    analysis = analyze(results, phrase, tempo_bpm)
     print()
     print("=== Coaching ===")
     print(analysis.deterministic_feedback)
@@ -243,7 +276,7 @@ def main() -> None:
     if analysis.weak_bols:
         print(f"Weak bols: {', '.join(analysis.weak_bols)}")
 
-    append_log_entry(build_log_entry(results, PHRASE, args.bpm, analysis))
+    append_log_entry(build_log_entry(results, phrase, tempo_bpm, analysis))
 
     if quit_requested:
         print()
