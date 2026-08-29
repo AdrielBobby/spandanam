@@ -20,6 +20,7 @@ from .gemini_report import dump_session
 from .gemma_ear import DEFAULT_HEARING, hear
 from .haptic import BandLink, compose_frame
 
+
 log = logging.getLogger("spandanam")
 
 
@@ -27,7 +28,11 @@ async def run(cfg: HubConfig, preferences: str, session_dir: Path, wav_file: str
     hop = cfg.sample_rate * cfg.hop_ms // 1000
     q: queue.Queue = queue.Queue(maxsize=200)
     mic = MicBuffer(cfg.sample_rate, cfg.gemma_clip_s)
-    link = BandLink(cfg.band_host, cfg.band_port)
+    if cfg.band_host == "gpio":
+        from .pi_band import PiBand
+        link = PiBand()
+    else:
+        link = BandLink(cfg.band_host, cfg.band_port)
     client = httpx.AsyncClient()
     hearing = DEFAULT_HEARING
     running_max: dict[str, float] = {}
@@ -82,7 +87,7 @@ async def run(cfg: HubConfig, preferences: str, session_dir: Path, wav_file: str
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="Spandanam hub")
-    ap.add_argument("--band", default=None, help="band IP (default from config)")
+    ap.add_argument("--band", default=None, help="band IP, or 'gpio' to drive buzzers from Pi GPIO directly")
     ap.add_argument("--prefs", default="default", help="listener preferences, free text (e.g. 'softer chest, more cymbals')")
     ap.add_argument("--wav", default=None, help="play a melam recording instead of the mic")
     ap.add_argument("--session", default=f"data/sessions/{int(time.time())}")

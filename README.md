@@ -29,6 +29,8 @@ After the performance, the **Gemini API** turns the session log into a report on
 firmware/spandanam_band/   XIAO ESP32-S3: 8-channel PWM haptic band, UDP frames
 hub/spandanam/             audio · dsp (reflex) · gemma_ear (judgement) · haptic (frame composer) · console · gemini_report
 hub/spandanam/fake_band.py dev stand-in for the wearable
+hub/spandanam/pi_band.py   drive buzzers/motors straight from Pi 5 GPIO (--band gpio)
+hub/spandanam/tap_sync.py  IMU tap-along: is the wearer locked to the beat?
 tests/                     pytest
 docs/                      BOM · ARCHITECTURE · PLAN_24H
 ```
@@ -47,7 +49,7 @@ python -m spandanam.main --prefs "softer chest, more cymbals"            # live 
 GEMINI_API_KEY=... python -c "from spandanam.gemini_report import *; from pathlib import Path; \
   print(generate_report(Path('data/sessions/<id>/session.json'), 'gemini-2.5-flash'))"
 ```
-Wearable build: [`firmware/spandanam_band/README.md`](firmware/spandanam_band/README.md) · Parts: [`docs/BOM.md`](docs/BOM.md).
+Kit we have today (Pi 5 + 3 buzzers + IMU): [`docs/KIT_NOW.md`](docs/KIT_NOW.md) · Full wearable: [`firmware/spandanam_band/README.md`](firmware/spandanam_band/README.md) · Parts: [`docs/BOM.md`](docs/BOM.md).
 
 ## Tests
 ```bash
