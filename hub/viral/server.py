@@ -16,7 +16,7 @@ from fastapi.staticfiles import StaticFiles
 from . import judge
 from .config import FINGER_KEYS, KITS, Config
 from .events import Strike
-from .bridge import phrase_to_score
+from .bridge import analysis_for_coach, analyze_attempt, phrase_to_score
 from .gemma_thaalam import coach
 from .gemini_compose import compose
 from .hardware import Glove
@@ -111,8 +111,12 @@ class Hub:
             await asyncio.sleep(0.01)
         if self.play:
             self.last_summary = judge.summary(sc, self.play) | {"per_finger_miss": self._per_finger(sc)}
+            analysis = analyze_attempt(sc, self.play.log)
+            if analysis:
+                self.last_summary |= {"analysis": analysis.as_dict()}
             await self.broadcast({"type": "practice_end", "summary": self.last_summary})
-            fb = await coach(self.http, self.cfg.ollama_url, self.cfg.gemma_model, self.last_summary, sc.finger_map.names, sc.finger_map.syllables)
+            facts = (analysis_for_coach(analysis, sc.bpm) | {"points": self.last_summary["points"], "stars": self.last_summary["stars"]}) if analysis else self.last_summary
+            fb = await coach(self.http, self.cfg.ollama_url, self.cfg.gemma_model, facts, sc.finger_map.names, sc.finger_map.syllables)
             await self.broadcast({"type": "coach", **fb})
         self.mode = "idle"
 

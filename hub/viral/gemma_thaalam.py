@@ -31,7 +31,15 @@ STRUCT_SYS = """You are a Kerala percussion asan and music analyst. You receive:
 - kit: chenda|mridangam|tabla|kit ; title: short; kaalam: 1-3 (tempo stage)
 Return ONLY JSON: {"title":"","thaalam":"","beats_per_cycle":8,"kit":"chenda","kaalam":1,
  "finger_map":{"cluster_to_finger":{"0":0,"1":1,"2":2,"3":3,"4":4},"names":["","","","",""],"syllables":["","","","",""]},
- "phrases":[[0,8]], "notes_en":"<=25 words on the rhythm's character"}"""
+ "phrases":[[0,8]], "notes_en":"<=25 words on the rhythm's character"}
+
+Example input: {"bpm": 96, "clusters": {"0": {"centroid_hz": 140, "count": 16}, "1": {"centroid_hz": 420, "count": 16}, "2": {"centroid_hz": 900, "count": 16},
+ "3": {"centroid_hz": 1800, "count": 8}, "4": {"centroid_hz": 4200, "count": 8}}, "events": [[0,0,1.0],[0.5,2,0.6],[1,1,0.8],[1.5,2,0.5],[2,0,0.9],[2.5,3,0.6],[3,1,0.8],[3.5,4,0.4], ...]}
+Example output: {"title":"Chempada practice","thaalam":"chempada (adi) 8","beats_per_cycle":8,"kit":"chenda","kaalam":1,
+ "finger_map":{"cluster_to_finger":{"0":0,"1":1,"2":2,"3":3,"4":4},"names":["valanthala","idanthala-open","idanthala-closed","rim","elathalam"],
+ "syllables":["thom","tha","ki","ta","ri"]},"phrases":[[0,8],[0,16],[0,32]],
+ "notes_en":"Steady 8-beat chempada: bass on 1 and 5, treble answers on the off-beats, cymbal colour on 4 and 8."}
+Rules: cluster 0 is the lowest timbre. Never output a finger index outside 0-4. Keep every key exactly as spelled above."""
 
 COACH_SYS = """You are a warm, precise percussion teacher (a Kerala asan). You receive DETERMINISTIC FACTS about one attempt —
 accuracy, weak fingers, weak syllables, dominant error (early/late/wrong_finger/missed), a recommended next bpm and phrase —

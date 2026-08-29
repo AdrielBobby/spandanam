@@ -22,3 +22,14 @@ def test_analysis_for_coach_flattens():
     a = PracticeAnalysis(62.5, 16, ("ring", "pinky"), ("ki",), "late", 52, ("tha", "ki", "ta"), "Mostly late on ring finger.")
     d = analysis_for_coach(a, 60)
     assert d["accuracy"] == 0.625 and d["weak_fingers"] == ["ring", "pinky"] and d["recommended_bpm"] == 52 and d["current_bpm"] == 60
+
+
+def test_judge_log_feeds_deterministic_analysis():
+    from viral.bridge import analyze_attempt, judge_log_to_results
+    sc = phrase_to_score(["dhim", "tha", "ka", "ta", "ki"], 120)
+    log = ((0, "perfect", 5.0, 0), (1, "late", 110.0, 1), (2, "wrong_finger", 20.0, 0), (3, "miss", 0.0, 2), (None, "extra", 0.0, 4))
+    rs = judge_log_to_results(sc, log)
+    assert len(rs) == 5 and rs[1].timing_error_ms == 110 and rs[3].actual is None and rs[4].expected is None
+    a = analyze_attempt(sc, log)
+    assert a is not None and a.total_expected == 4 and "ring" in a.weak_fingers or "middle" in a.weak_fingers
+    assert a.dominant_error in ("missed", "wrong_finger", "late")
