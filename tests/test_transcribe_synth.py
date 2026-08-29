@@ -65,3 +65,22 @@ def test_reconcile_clamps_confidence_and_marks_uncertain():
     assert mid.confidence == 0.5 and "uncertain" not in mid.thaalam
     strong = reconcile_cycle(st, {8: 0.7}, 96)
     assert strong.confidence == 0.9
+
+
+def test_thin_events_merges_doublets_and_caps_density():
+    from viral.learn import thin_events
+    ev = [(0.0, 0, .5), (0.25, 0, .9), (0.5, 1, .4), (0.75, 1, .3), (1.0, 2, .9), (1.0, 3, .8), (1.0, 4, .7), (1.25, 2, .2)]
+    out = thin_events(ev, {i: i for i in range(5)})
+    beats0 = [e for e in out if e[1] == 0]; assert beats0 == [(0.25, 0, .9)]        # doublet merged, strongest kept
+    assert len([e for e in out if int(e[0]) == 1]) <= 2                             # density cap
+
+
+def test_build_kit_from_synthetic(tmp_path, monkeypatch):
+    from viral import sample_kit
+    from viral.transcribe import transcribe
+    from viral.synth_track import render
+    monkeypatch.setattr(sample_kit, "KITS_DIR", tmp_path / "kits")
+    p = tmp_path / "t.wav"; sf.write(p, render(96, 2), SR)
+    tr = transcribe(str(p))
+    out = sample_kit.build_kit(p, tr, {i: i for i in range(5)}, "track_t")
+    assert out is not None and all((out / f"{i}.wav").exists() for i in range(5))

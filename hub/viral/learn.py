@@ -16,7 +16,31 @@ from .transcribe import normalize_octave, quantize_onsets, refine_tempo, transcr
 log = logging.getLogger(__name__)
 
 
-def build_score(events: list[tuple[float, int, float]], st: Structure, bpm: float) -> Score:
+def thin_events(events: list[tuple[float, int, float]], cluster_to_finger: dict[int, int],
+                min_gap_beats: float = 0.5, max_per_beat: int = 2) -> list[tuple[float, int, float]]:
+    """Make a playable score out of raw onsets: per finger, merge hits closer than min_gap_beats (keep the strongest);
+    then cap notes per beat slot (keep the strongest). Learned melam is dense; a rhythm game is not."""
+    by_finger: dict[int, list[tuple[float, int, float]]] = {}
+    for b, c, s in sorted(events):
+        f = cluster_to_finger.get(c, c % 5)
+        lst = by_finger.setdefault(f, [])
+        if lst and b - lst[-1][0] < min_gap_beats:
+            if s > lst[-1][2]: lst[-1] = (b, c, s)
+        else:
+            lst.append((b, c, s))
+    merged = sorted(x for lst in by_finger.values() for x in lst)
+    out: list = []; slot: dict = {}
+    for b, c, s in merged:
+        slot.setdefault(int(b), []).append((s, b, c))
+    for k in sorted(slot):
+        keep = sorted(slot[k], reverse=True)[:max_per_beat]
+        out += [(b, c, s) for s, b, c in sorted(keep, key=lambda x: x[1])]
+    return out
+
+
+def build_score(events: list[tuple[float, int, float]], st: Structure, bpm: float, thin: bool = True) -> Score:
+    if thin:
+        events = thin_events(events, st.cluster_to_finger)
     notes = tuple(sorted((Note(b, st.cluster_to_finger.get(c, c % 5), s, st.syllables[st.cluster_to_finger.get(c, c % 5)])
                           for b, c, s in events), key=lambda n: n.beat))
     fmap = FingerMap(st.names, tuple(FINGER_COLORS), st.syllables)
@@ -58,7 +82,7 @@ def _clip_wav(path: str, seconds: float = 6.0) -> bytes | None:
         log.debug("clip failed: %s", e); return None
 
 
-ALGO_VERSION = "v5-cands3-5-confcap"     # bump when transcription/digest logic changes so stale caches are ignored
+ALGO_VERSION = "v6-thin-realkit"     # bump when transcription/digest logic changes so stale caches are ignored
 
 
 def _cache_path(path: Path, model: str) -> Path:
@@ -91,6 +115,13 @@ async def learn_from_file(path: Path, ollama_url: str, model: str, use_audio: bo
         st = await structure(client, ollama_url, model, bpm, tr.cluster_profile, events, _clip_wav(str(path)) if use_audio else None, fb, scores)
     st = reconcile_cycle(st, scores, bpm)
     score = build_score(events, st, bpm)
+    try:                                                # authentic sounds: sample the real strikes from this recording
+        from .sample_kit import build_kit
+        kit_dir = build_kit(path, tr, st.cluster_to_finger, f"track_{path.stem}")
+        if kit_dir:
+            score = Score(score.title, score.bpm, score.beats_per_cycle, score.notes, score.finger_map, kit_dir.name, score.thaalam, score.phrases)
+    except Exception as e:
+        log.warning("real kit not built: %s", e)
     if score.title == "untitled":
         score = Score(path.stem, score.bpm, score.beats_per_cycle, score.notes, score.finger_map, score.kit, score.thaalam, score.phrases)
     if use_cache:

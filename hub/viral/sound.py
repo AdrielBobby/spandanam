@@ -31,10 +31,13 @@ KIT_PARAMS = {
 }
 
 
+KITS_DIR = Path(__file__).resolve().parents[2] / "assets" / "kits"
+
+
 class Sampler:
     def __init__(self, kit: str, assets: Path | None = None):
         self.kit = kit
-        self.buf = self._load(kit, assets)
+        self.buf = self._load(kit, assets or KITS_DIR)
         try:
             import sounddevice as sd
             self.sd = sd
@@ -53,7 +56,7 @@ class Sampler:
         return out
 
     def set_kit(self, kit: str, assets: Path | None = None) -> None:
-        self.kit, self.buf = kit, self._load(kit, assets)
+        self.kit, self.buf = kit, self._load(kit, assets or KITS_DIR)
 
     def play(self, finger: int, velocity: float = 1.0) -> None:
         if self.sd is None:
