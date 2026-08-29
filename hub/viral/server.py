@@ -83,6 +83,29 @@ class Hub:
         if self.metro_task: self.metro_task.cancel(); self.metro_task = None
         self.play = None; self.glove.all_off()
 
+    # ---- listen mode: auto-play the score (speaker + LEDs) while the lanes fall, no judging
+    async def start_listen(self, phrase: int | None, bpm_scale: float = 1.0) -> None:
+        if not self.score: return
+        await self.stop_all(); self.mode = "listen"
+        sc = self.score
+        if phrase is not None and 0 <= phrase < len(sc.phrases):
+            a, b = sc.phrases[phrase]; sc = sc.slice(a, b)
+        sc = Score(sc.title, sc.bpm * bpm_scale, sc.beats_per_cycle, sc.notes, sc.finger_map, sc.kit, sc.thaalam, sc.phrases)
+        self.sampler.set_kit(sc.kit)
+        lead_in = 2 * sc.beat_s; start = time.monotonic() + lead_in
+        await self.broadcast({"type": "practice_start", "score": json.loads(sc.to_json()), "lead_in_s": lead_in, "listen": True})
+        asyncio.create_task(self._listen_loop(sc, start))
+
+    async def _listen_loop(self, sc: Score, start: float) -> None:
+        for i, n in enumerate(sc.notes):
+            if self.mode != "listen": return
+            await asyncio.sleep(max(0.0, start + n.beat * sc.beat_s - time.monotonic()))
+            self.sampler.play(n.finger, n.velocity); self.glove.cue(n.finger, ms=40, led=True)
+            await self.broadcast({"type": "strike", "finger": n.finger, "v": n.velocity, "src": "listen", "note": i, "judge": "auto"})
+        await asyncio.sleep(0.5)
+        if self.mode == "listen":
+            self.mode = "idle"; await self.broadcast({"type": "status", "text": "listen finished — your turn: Practice"})
+
     # ---- practice mode
     async def start_practice(self, phrase: int | None, bpm_scale: float = 1.0) -> None:
         if not self.score: return
@@ -179,6 +202,7 @@ def create_app(cfg: Config) -> FastAPI:
                     await hub.start_free()
                 elif t == "kit": hub.sampler.set_kit(m.get("kit", "chenda")); await hub.broadcast({"type": "kit", "kit": hub.sampler.kit})
                 elif t == "practice": await hub.start_practice(m.get("phrase"), float(m.get("speed", 1.0)))
+                elif t == "listen": await hub.start_listen(m.get("phrase"), float(m.get("speed", 1.0)))
                 elif t == "stop": await hub.stop_all(); hub.mode = "idle"
                 elif t == "load_score": hub.score = score_from_dict(m.get("score", {}))
                 elif t == "game":                        # Repeat after Maveli: next round (level up on pass, same level on fail)
