@@ -83,6 +83,10 @@ class Hub:
         self.stop_metro.set()
         if self.metro_task: self.metro_task.cancel(); self.metro_task = None
         self.play = None; self.glove.all_off()
+        if self.mode in ("listen", "practice"): self.mode = "idle"      # _listen_loop / _practice_loop check this and exit
+        try:
+            if self.sampler.sd: self.sampler.sd.stop()
+        except Exception: pass
 
     # ---- listen mode: auto-play the score (speaker + LEDs) while the lanes fall, no judging
     async def start_listen(self, phrase: int | None, bpm_scale: float = 1.0) -> None:
@@ -200,6 +204,7 @@ def create_app(cfg: Config) -> FastAPI:
     @app.websocket("/ws")
     async def ws(sock: WebSocket):
         await sock.accept(); hub.clients.add(sock)
+        await sock.send_text(json.dumps({"type": "status", "text": f"connected · mode {hub.mode}"}))
         try:
             while True:
                 m = json.loads(await sock.receive_text()); t = m.get("type")
@@ -232,6 +237,8 @@ def create_app(cfg: Config) -> FastAPI:
                         await hub.broadcast({"type": "status", "text": f"phrase error: {e}"})
         except WebSocketDisconnect:
             hub.clients.discard(sock)
+            if not hub.clients and hub.mode in ("listen", "practice"):   # last dashboard gone (reload/close): stop playback
+                await hub.stop_all(); hub.mode = "idle"
     return app
 
 
