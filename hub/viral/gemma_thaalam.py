@@ -162,14 +162,15 @@ def parse_structure(content: str, fallback: Structure) -> Structure:
                      str(d.get("evidence", "")), float(min(1.0, max(0.0, d.get("confidence", 0.5)))))
 
 
-async def _chat(client: httpx.AsyncClient, url: str, model: str, system: str, user: str, wav: bytes | None, n: int) -> str | None:
+async def _chat(client: httpx.AsyncClient, url: str, model: str, system: str, user: str, wav: bytes | None, n: int,
+                timeout: float = 60.0) -> str | None:
     msg: dict = {"role": "user", "content": user}
     if wav:
         msg["audio"] = [base64.b64encode(wav).decode()]
     body = {"model": model, "stream": False, "format": "json", "options": {"temperature": 0.2, "num_predict": n},
             "messages": [{"role": "system", "content": system}, msg]}
     try:
-        r = await client.post(f"{url}/api/chat", json=body, timeout=60.0); r.raise_for_status()
+        r = await client.post(f"{url}/api/chat", json=body, timeout=timeout); r.raise_for_status()
         return repair_json(clean(r.json()["message"]["content"]))
     except (httpx.HTTPError, KeyError) as e:
         log.warning("gemma failed: %s", e); return None

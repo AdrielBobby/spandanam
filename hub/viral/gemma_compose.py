@@ -30,7 +30,7 @@ async def compose_gemma(client: httpx.AsyncClient, url: str, model: str, brief: 
                         cycles: int, bpm: float) -> Score:
     user = json.dumps({"brief": brief, "kit": kit if kit in KITS else "chenda", "thaalam": thaalam, "cycles": cycles, "bpm": bpm,
                        "kit_voices": KITS.get(kit, KITS["chenda"])["voices"]})
-    c = await _chat(client, url, model, SYS, user, None, 1400)
+    c = await _chat(client, url, model, SYS, user, None, 1400, timeout=240.0)
     d = normalize_keys(json.loads(c)) if c else {}
     # coerce labels -> fingers when the model gave syllables but sloppy finger indices
     notes = []
