@@ -12,7 +12,8 @@ Onam-focused Kerala Chenda vaaythari learning coach.
 - **Gemma (local, laptop or Pi)** — explanation, arrangement, hearing/judging, Malayalam interaction, pedagogical adaptation.
 - **Interface:** 5 finger lanes — thumb, index, middle, ring, pinky.
 - **Hardware target:** 5× MPU6050 IMUs, 5× buzzers/vibration motors, 5× LEDs, glove/finger-strap rig, Raspberry Pi 5, laptop speakers, laptop dashboard.
-- **Existing hardware:** Raspberry Pi 5, 1× MPU6050, 3× buzzers. Everything else not yet available.
+- **Existing hardware:** Raspberry Pi 5, 1× MPU6050, 3× buzzers. Everything else not yet available. MPU6050 sensors and other glove components are still to be acquired.
+
 
 ## Current development constraints
 
