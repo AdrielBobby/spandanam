@@ -1,6 +1,6 @@
 # Contributing
 
-Hackathon mode: small commits, push often, `main` is always demo‑able. Project: Viralthaalam (air-percussion glove, Gemma finger thaalam).
+Hackathon mode: small commits, push often, `main` is always demo‑able. Project: Thaalam (air-percussion glove, Gemma finger thaalam).
 
 ## Branches
 - `main` — always runs. Merge via PR or fast‑forward after a quick check.

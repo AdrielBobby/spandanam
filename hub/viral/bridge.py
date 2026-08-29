@@ -1,4 +1,4 @@
-"""Bridge between Adriel's pure scheduler/analysis layer (hub/asan) and the Viralthaalam server/Gemma pipeline (hub/viral).
+"""Bridge between Adriel's pure scheduler/analysis layer (hub/asan) and the Thaalam server/Gemma pipeline (hub/viral).
 
 - phrase_to_score(): a vaaythari phrase (["dhim","tha","ka",...]) -> practice Score using asan.config.SYLLABLE_FINGER.
 - analysis_for_coach(): asan.analysis.PracticeAnalysis (deterministic facts) -> the dict Gemma's coach() explains.

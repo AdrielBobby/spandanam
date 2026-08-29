@@ -1,4 +1,4 @@
-# 24 h plan — Viralthaalam
+# 24 h plan — Thaalam
 
 | Time | Milestone |
 |---|---|

@@ -1,7 +1,7 @@
 [project]
-name = "viralthaalam"
+name = "thaalam"
 version = "0.1.0"
-description = "Viralthaalam: 5-finger air-percussion glove with real-time feedback; Gemma 3n on-device structures rhythm into finger thaalam, Gemini composes"
+description = "Thaalam: 5-finger air-percussion glove with real-time feedback; Gemma 3n on-device structures rhythm into finger thaalam, Gemini composes"
 requires-python = ">=3.10"
 dependencies = [
   "numpy>=1.26", "librosa>=0.10", "soundfile>=0.12", "sounddevice>=0.4", "httpx>=0.27",

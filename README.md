@@ -1,8 +1,8 @@
-# Viralthaalam 🖐️🥁
+# Thaalam 🖐️🥁
 
 **Air percussion on your fingers, with Yousician‑style real‑time feedback — and Gemma 3n on a Raspberry Pi 5 turning any track into a finger‑by‑finger thaalam lesson.**
 
-*viral* = finger · *thaalam* = rhythm. Built in 24 h at the [Google Physical AI Hackathon: Onam Edition](https://physicalai.tinkerhub.org/), TinkerSpace Kochi, 29–30 Aug 2026 · Themes: **Onakalikal · Homecoming** · Powered by Gemma 3n + Gemini.
+*Thaalam* — rhythm. Built in 24 h at the [Google Physical AI Hackathon: Onam Edition](https://physicalai.tinkerhub.org/), TinkerSpace Kochi, 29–30 Aug 2026 · Themes: **Onakalikal · Homecoming** · Powered by Gemma 3n + Gemini.
 
 ## What it is
 A glove with an IMU, a vibration motor and an LED on each of five fingers. Strike the air → the Pi plays that finger's drum voice from the speaker. The fingers **feel the tempo** (buzz), **see which finger is next** (LED), and the dashboard shows falling notes per finger with PERFECT / GOOD / LATE / WRONG FINGER judged live.

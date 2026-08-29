@@ -1,4 +1,4 @@
-"""Viralthaalam server: FastAPI + WebSocket dashboard. Modes: free (metronome on fingers), learn (upload -> Gemma -> score),
+"""Thaalam server: FastAPI + WebSocket dashboard. Modes: free (metronome on fingers), learn (upload -> Gemma -> score),
 practice (Yousician-style real-time judging), compose (Gemini)."""
 from __future__ import annotations
 
@@ -121,7 +121,7 @@ class Hub:
 
 
 def create_app(cfg: Config) -> FastAPI:
-    app = FastAPI(title="Viralthaalam"); hub = Hub(cfg)
+    app = FastAPI(title="Thaalam"); hub = Hub(cfg)
     app.mount("/static", StaticFiles(directory=ROOT / "static"), name="static")
 
     @app.on_event("startup")
