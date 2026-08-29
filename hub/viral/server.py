@@ -22,11 +22,12 @@ from .gemma_thaalam import coach
 from .gemini_compose import compose
 from .gemma_compose import compose_gemma
 from .hardware import Glove
-from .imu import MPU6050Reader
+from .imu import MPU6050Reader, Stroke
 from .ladder import DEFAULT_SCALES, Ladder, advance
 from .learn import learn_from_file
 from .malayalam import LABELS_ML, coach_ml, structure_ml
 from .metronome import run_metronome
+from .motion import motion_feedback
 from .score import Score, score_from_dict
 from .sound import Sampler
 from . import speech
@@ -52,6 +53,7 @@ class Hub:
         self.score: Score | None = None
         self.play: judge.PlayState | None = None
         self.ladder: Ladder | None = None
+        self.round_strokes: list[Stroke] = []
         self.stop_metro = asyncio.Event(); self.metro_task: asyncio.Task | None = None
         self.http = httpx.AsyncClient()
         self.last_summary: dict = {}
@@ -77,6 +79,7 @@ class Hub:
     async def poll_imu(self) -> None:
         while True:
             for st in self.imu.drain():
+                if self.mode == "practice": self.round_strokes.append(st)   # motion coach: tilt at impact
                 await self.on_strike(Strike(0, time.monotonic(), min(1.0, st.peak_g / 8), "imu"))
             await asyncio.sleep(0.005)
 
@@ -133,6 +136,7 @@ class Hub:
         lead_in = 4 * sc.beat_s
         start = time.monotonic() + lead_in
         self.play = judge.PlayState(start_s=start)
+        self.round_strokes = []
         await self.broadcast({"type": "practice_start", "score": json.loads(sc.to_json()), "lead_in_s": lead_in})
         self._chant(sc)
         asyncio.create_task(self._practice_loop(sc))
@@ -160,6 +164,8 @@ class Hub:
             await asyncio.sleep(0.01)
         if self.play:
             self.last_summary = judge.summary(sc, self.play) | {"per_finger_miss": self._per_finger(sc)}
+            mf = motion_feedback(self.round_strokes)
+            if mf: self.last_summary |= {"motion": mf.as_dict()}
             analysis = analyze_attempt(sc, self.play.log)
             if analysis:
                 self.last_summary |= {"analysis": analysis.as_dict()}
