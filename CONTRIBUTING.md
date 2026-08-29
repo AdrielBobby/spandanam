@@ -2,6 +2,18 @@
 
 Hackathon mode: small commits, push often, `main` is always demo‑able. Project: Thaalam (air-percussion glove, Gemma finger thaalam).
 
+## Ownership (hackathon, 29–30 Aug)
+| Lane | Owner | Files you own — others only touch via a quick ping |
+|---|---|---|
+| **Hardware** | Fathima | `hub/viral/hardware.py`, `hub/viral/imu.py`, `docs/WIRING.md`, `docs/SHOPPING.md`, glove build |
+| **UI** | Adriel | `hub/viral/static/index.html` (+ any new static assets), dashboard messages in `server.py` (`type: …` payloads), `hub/asan/*` |
+| **AI/ML** | Ryyan | `hub/viral/gemma_thaalam.py`, `gemini_compose.py`, `transcribe.py`, `learn.py`, `bridge.py`, `gemma_cli.py`, `docs/GEMMA_MAX.md` |
+| Shared | all | `server.py` (coordinate on the WebSocket message contract below), `judge.py`, `score.py`, tests, README |
+
+**WebSocket contract** (server → dashboard): `strike{finger,v,src,judge?,offset_ms?,note?,streak?,points?}` · `click{beat,finger,down}` · `score{score,gemma}` · `practice_start{score,lead_in_s}` · `miss{notes,streak}` · `practice_end{summary}` · `coach{say_en,say_ml,drill_phrase,drill_bpm,focus}` · `status{text}` · `kit{kit}`.
+Dashboard → server: `key{key,v}` · `free{bpm,cycle,click}` · `kit{kit}` · `practice{phrase,speed}` · `stop` · `phrase{text,bpm,cycles}` · `load_score{score}`.
+Add a message type? Add it here in the same commit.
+
 ## Branches
 - `main` — always runs. Merge via PR or fast‑forward after a quick check.
 - `fw/*` firmware, `hub/*` hub, `docs/*` docs.
