@@ -74,7 +74,8 @@ def default_structure(bpm_hint: float, n_beats: float) -> Structure:
 
 
 EXPECTED_KEYS = ("title", "thaalam", "beats_per_cycle", "kit", "kaalam", "finger_map", "phrases", "notes_en",
-                 "cluster_to_finger", "names", "syllables", "say_en", "say_ml", "drill_phrase", "drill_bpm", "focus")
+                 "cluster_to_finger", "names", "syllables", "say_en", "say_ml", "drill_phrase", "drill_bpm", "focus",
+                 "phrase", "bpm", "banter")
 
 
 def _similar(a: str, b: str) -> bool:

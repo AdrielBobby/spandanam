@@ -11,3 +11,9 @@ def test_parse_round_filters_and_clamps():
     r = parse_round(json.dumps({"phrase": ["tha", "boom", "ki", "ta"], "bpm": 999, "banter": "Sheri!"}), 2)
     assert r.phrase == ("tha", "ki", "ta") and r.bpm == 160 and r.source == "gemma"
     assert parse_round(json.dumps({"phrase": ["tha"]}), 1) is None
+
+
+def test_normalize_keeps_phrase_distinct_from_phrases():
+    from viral.gemma_thaalam import normalize_keys
+    d = normalize_keys({"phrase": ["tha"], "phrases": [[0, 8]]})
+    assert d["phrase"] == ["tha"] and d["phrases"] == [[0, 8]]
