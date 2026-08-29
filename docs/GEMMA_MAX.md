@@ -22,3 +22,12 @@
 
 ## Stage line
 "Every hit is judged by math in under a millisecond — we don't dress that up as AI. Gemma does what math can't: it listens to a track and understands it as a thaalam, decides how it lives on five fingers, cuts it into lessons, and coaches you in Malayalam — on this Pi, offline. Gemini writes new music for it."
+
+## Pi 5 has 4 GB RAM — use the laptop's Gemma over a tunnel
+`gemma3n:e4b` needs ~8 GB; `e2b` is borderline and slow on the Pi. The rules allow the model on a laptop, so:
+```bash
+# laptop (keeps running):   ./scripts/mac_gemma_tunnel.sh ryyan@<pi-ip>
+# pi:                       ./scripts/pi_run.sh            # auto-detects the tunnel, else falls back to local e2b
+```
+Measured from the Pi through the tunnel to an M-series Mac: coach ≈ 7 s, structure ≈ 10–20 s. Same code path as fully on-Pi; only `OLLAMA_URL` changes.
+Judging-day plan: laptop Gemma via tunnel for speed; show `ollama ps` on the laptop and the Pi's `OLLAMA_URL` so it's transparent. If e2b finishes and runs acceptably, demo one round fully on the Pi.
