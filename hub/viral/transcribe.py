@@ -132,7 +132,7 @@ def digest(bpm: float, profile: dict, events: list[tuple[float, int, float]], he
 
 
 # ---------- per-timbre periodicity + tempo refinement (the discriminative version) ----------
-CYCLE_CANDIDATES_V2 = (4, 6, 7, 8, 12, 14, 16)
+CYCLE_CANDIDATES_V2 = (3, 4, 5, 6, 7, 8, 12, 14, 16)   # 3 = thakita/roopakam, 5 = khanda, 7 = thriputa/pandi
 
 
 def quantize_onsets(tr: Transcription, bpm: float, grid: float = GRID) -> list[tuple[float, int, float]]:

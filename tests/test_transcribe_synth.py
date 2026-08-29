@@ -52,3 +52,16 @@ def test_normalize_octave_folds_fast_even_cycles(tmp_path):
     p = tmp_path / "t.wav"; sf.write(p, render(88, 4, "tabla"), SR)
     tr = transcribe(str(p)); bpm, sc = refine_tempo(tr); bpm2, sc2 = normalize_octave(tr, bpm, sc)
     assert bpm2 <= 160 and abs(bpm2 - 88) < 4 and pick_cycle(sc2) == 8
+
+
+def test_reconcile_clamps_confidence_and_marks_uncertain():
+    from viral.learn import reconcile_cycle
+    from viral.gemma_thaalam import default_structure
+    from dataclasses import replace
+    st = replace(default_structure(96, 32), beats_per_cycle=8, confidence=0.9)
+    weak = reconcile_cycle(st, {3: 0.05, 4: 0.1, 8: 0.08}, 96)
+    assert weak.confidence <= 0.35 and "uncertain" in weak.thaalam
+    mid = reconcile_cycle(st, {4: 0.2, 8: 0.25}, 96)
+    assert mid.confidence == 0.5 and "uncertain" not in mid.thaalam
+    strong = reconcile_cycle(st, {8: 0.7}, 96)
+    assert strong.confidence == 0.9

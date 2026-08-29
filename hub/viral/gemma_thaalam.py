@@ -70,8 +70,8 @@ Return ONLY JSON: {"title":"","thaalam":"","beats_per_cycle":8,"kit":"chenda","k
 Never copy sample text; every value must come from THIS digest. Names must be the chosen kit's voices in low→high order
 (chenda: valanthala, idanthala-open, idanthala-closed, rim, elathalam; mridangam: thom, nam, dhin, chapu, arai; tabla: ge, na, tin, te, ke).
 Rules: cluster 0 is the lowest timbre. Never output a finger index outside 0-4. Keep every key exactly as spelled above.
-Thaalam hints: panchari = 6 beats (pathikaalam very slow, later kaalams double); pandi = 7 (often felt as 14); chempada/adi = 8;
-ekam = 4; thriputa = 7; roopakam = 3/6. Use cycle_periodicity (also by half/double tempo) + beat_histogram as evidence; if evidence_strength is weak or very weak, say so in
+Thaalam hints: thakita practice = 3; panchari = 6 (pathikaalam very slow, later kaalams double); pandi = 7 (often felt as 14);
+chempada/adi = 8; ekam = 4; khanda = 5; thriputa = 7; roopakam = 3/6. Use cycle_periodicity (also by half/double tempo) + beat_histogram as evidence; if evidence_strength is weak or very weak, say so in
 "evidence", keep confidence <= 0.5 and prefer best_cycle_guess. Do not claim certainty the numbers don't support.
 DO NOT list or echo the events. Output ONLY the small JSON object described — nothing else."""
 
@@ -158,7 +158,7 @@ def parse_structure(content: str, fallback: Structure) -> Structure:
     cycle = int(d.get("beats_per_cycle", fallback.beats_per_cycle)) or 8
     if len(phrases) < 2:
         phrases = auto_phrases(max(fallback.phrases[-1][1] if fallback.phrases else cycle, cycle), cycle)
-    names_for_cycle = {4: "ekam (4)", 6: "panchari (6)", 7: "thriputa/pandi (7)", 8: "chempada/adi (8)", 12: "panchari (12)", 14: "pandi (14)", 16: "chempada (16)"}
+    names_for_cycle = {3: "thakita/roopakam (3)", 4: "ekam (4)", 5: "khanda (5)", 6: "panchari (6)", 7: "thriputa/pandi (7)", 8: "chempada/adi (8)", 12: "panchari (12)", 14: "pandi (14)", 16: "chempada (16)"}
     thaalam = str(d.get("thaalam") or "").strip() or names_for_cycle.get(cycle, f"{cycle}-beat cycle")
     return Structure(str(d.get("title") or fallback.title), thaalam,
                      cycle, kit, int(d.get("kaalam", 1)),

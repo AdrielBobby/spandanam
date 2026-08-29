@@ -28,10 +28,16 @@ def reconcile_cycle(st: Structure, scores: dict[int, float], bpm: float) -> Stru
     from dataclasses import replace
     from .transcribe import pick_cycle
     guess = pick_cycle(scores); mx = max(scores.values()) if scores else 0.0
+    # confidence is clamped by the evidence, never by Gemma's enthusiasm
+    cap = 0.9 if mx > 0.35 else 0.5 if mx > 0.12 else 0.35
+    if st.confidence > cap:
+        st = replace(st, confidence=cap)
+    if mx <= 0.12 and "uncertain" not in st.thaalam:
+        st = replace(st, thaalam=f"{st.thaalam} — uncertain", evidence=(st.evidence + f" [periodicity only {mx:.2f}: treat the cycle as a guess]").strip())
     related = {guess, guess * 2, guess // 2 if guess % 2 == 0 else guess}
     if mx > 0.35 and st.beats_per_cycle not in related:
         log.info("cycle override: gemma %s -> evidence %s (score %.2f)", st.beats_per_cycle, guess, mx)
-        names = {4: "ekam (4)", 6: "panchari (6)", 7: "thriputa/pandi (7)", 8: "chempada/adi (8)", 12: "panchari (12)", 14: "pandi (14)", 16: "chempada (16)"}
+        names = {3: "thakita/roopakam (3)", 4: "ekam (4)", 5: "khanda (5)", 6: "panchari (6)", 7: "thriputa/pandi (7)", 8: "chempada/adi (8)", 12: "panchari (12)", 14: "pandi (14)", 16: "chempada (16)"}
         n = guess
         return replace(st, beats_per_cycle=n, thaalam=names.get(n, f"{n}-beat cycle"),
                        phrases=tuple((0.0, float(n * k)) for k in (1, 2, 4) if n * k <= max(p[1] for p in st.phrases) or k == 1),
@@ -52,7 +58,7 @@ def _clip_wav(path: str, seconds: float = 6.0) -> bytes | None:
         log.debug("clip failed: %s", e); return None
 
 
-ALGO_VERSION = "v4-octave-norm"     # bump when transcription/digest logic changes so stale caches are ignored
+ALGO_VERSION = "v5-cands3-5-confcap"     # bump when transcription/digest logic changes so stale caches are ignored
 
 
 def _cache_path(path: Path, model: str) -> Path:
