@@ -153,7 +153,9 @@ def parse_structure(content: str, fallback: Structure) -> Structure:
     cycle = int(d.get("beats_per_cycle", fallback.beats_per_cycle)) or 8
     if len(phrases) < 2:
         phrases = auto_phrases(max(fallback.phrases[-1][1] if fallback.phrases else cycle, cycle), cycle)
-    return Structure(str(d.get("title", fallback.title)), str(d.get("thaalam", fallback.thaalam)),
+    names_for_cycle = {4: "ekam (4)", 6: "panchari (6)", 7: "thriputa/pandi (7)", 8: "chempada/adi (8)", 12: "panchari (12)", 14: "pandi (14)", 16: "chempada (16)"}
+    thaalam = str(d.get("thaalam") or "").strip() or names_for_cycle.get(cycle, f"{cycle}-beat cycle")
+    return Structure(str(d.get("title") or fallback.title), thaalam,
                      cycle, kit, int(d.get("kaalam", 1)),
                      c2f, names, syl, phrases, str(d.get("notes_en", "")), content,
                      str(d.get("evidence", "")), float(min(1.0, max(0.0, d.get("confidence", 0.5)))))
