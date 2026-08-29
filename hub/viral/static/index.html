@@ -21,38 +21,38 @@ aside .card{background:#111;border:1px solid #222;border-radius:12px;padding:14p
 label{display:block;color:#999;font-size:12px;margin-top:8px}input,select{width:100%;background:#0d0d0d;color:#fff;border:1px solid #333;border-radius:8px;padding:8px;margin-top:4px}
 button.primary{width:100%;margin-top:10px;background:var(--acc);color:#000;border:0;padding:10px;border-radius:8px;font-weight:700;cursor:pointer}
 button.ghost{width:100%;margin-top:6px;background:#1a1a1a;color:#fff;border:1px solid #333;padding:8px;border-radius:8px;cursor:pointer}
-#coach{white-space:pre-wrap;color:#ddd}.ml{font-size:17px;color:#fff}
+#coach{white-space:pre-wrap;color:#ddd}.ml{font-family:"Noto Sans Malayalam","Manjari","Malayalam Sangam MN",system-ui,sans-serif;color:#bbb;font-size:13px}.mlbig{font-family:"Noto Sans Malayalam","Manjari","Malayalam Sangam MN",system-ui,sans-serif;font-size:17px;color:#fff;line-height:1.6}.en{color:#999;font-size:13px;margin-top:6px}
 .hidden{display:none}#status{color:var(--mut);font-size:12px}
 .click{position:absolute;bottom:0;height:64px;width:20%;background:rgba(255,214,10,.15);pointer-events:none}
 </style></head><body>
 <header><h1>Thaa<span>lam</span></h1>
-<div class="tabs"><button id="tFree" class="on">Free flow</button><button id="tLearn">Learn</button><button id="tPractice">Practice</button></div>
-<span id="status"></span><span style="margin-left:auto;color:#777;font-size:12px">keys: SPACE=thumb (or IMU) · J K L ; = index→pinky</span></header>
+<div class="tabs"><button id="tFree" class="on">Free flow · <span class="ml">സ്വതന്ത്രം</span></button><button id="tLearn">Learn · <span class="ml">പഠിക്കൂ</span></button><button id="tPractice">Practice · <span class="ml">പരിശീലനം</span></button></div>
+<span id="status"></span><span style="margin-left:auto;color:#777;font-size:12px">keys: SPACE=thumb (or IMU) · J K L ; = index→pinky · <span class="ml">തള്ളവിരൽ · ചൂണ്ടുവിരൽ · നടുവിരൽ · മോതിരവിരൽ · ചെറുവിരൽ</span></span></header>
 <main>
 <section id="lanes">
   <div id="judge"></div><div id="stats"><b id="pts">0</b> pts · streak <span id="streak">0</span></div>
   <div class="hitline"></div><div class="pad" id="pad"></div>
 </section>
 <aside>
-  <div class="card" id="cFree"><h3>Free flow</h3>
+  <div class="card" id="cFree"><h3>Free flow · <span class="ml">സ്വതന്ത്രമായി വായിക്കൂ</span></h3>
     <label>Instrument</label><select id="kit"></select>
     <label>Tempo (bpm) <span id="bpmv">90</span></label><input id="bpm" type="range" min="40" max="200" value="90">
     <label>Cycle beats</label><select id="cycle"><option>4</option><option>6</option><option>7</option><option selected>8</option><option>14</option></select>
     <label>Tempo on fingers</label><select id="click"><option value="walk">walk thumb→pinky</option><option value="all">all fingers</option><option value="downbeat">downbeat only</option></select>
-    <button class="primary" id="goFree">Start tempo</button><button class="ghost" id="stop">Stop</button></div>
-  <div class="card hidden" id="cLearn"><h3>Learn a track</h3>
-    <label>Audio (mp3/wav)</label><input type="file" id="file" accept="audio/*"><button class="primary" id="upload">Analyze with Gemma</button>
+    <button class="primary" id="goFree">Start tempo · താളം തുടങ്ങൂ</button><button class="ghost" id="stop">Stop · നിർത്തൂ</button></div>
+  <div class="card hidden" id="cLearn"><h3>Learn a track · <span class="ml">ഒരു താളം പഠിക്കൂ</span></h3>
+    <label>Audio (mp3/wav)</label><input type="file" id="file" accept="audio/*"><button class="primary" id="upload">Analyze with Gemma · വിശകലനം ചെയ്യൂ</button>
     <hr style="border-color:#222"><label>…or compose with Gemini</label><input id="brief" placeholder="playful Onam melam, builds to a kalasham">
-    <select id="ckit"></select><button class="ghost" id="compose">Compose</button>
+    <select id="ckit"></select><button class="ghost" id="compose">Compose · രചിക്കൂ</button>
     <hr style="border-color:#222"><label>…or type a vaaythari phrase</label><input id="phraseText" placeholder="dhim tha ka ta ki" value="dhim tha ka ta ki"><button class="ghost" id="loadPhrase">Load phrase</button>
     <div id="scoreInfo" style="margin-top:10px;color:#bbb;font-size:13px"></div></div>
-  <div class="card hidden" id="cPractice"><h3>Practice</h3>
+  <div class="card hidden" id="cPractice"><h3>Practice · <span class="ml">പരിശീലനം</span></h3>
     <label>Phrase</label><select id="phrase"><option value="">whole piece</option></select>
     <label>Speed</label><select id="speed"><option value="0.6">60%</option><option value="0.8">80%</option><option value="1" selected>100%</option></select>
-    <button class="ghost" id="goListen">▶ Listen (auto-play)</button>
-    <button class="primary" id="goPractice">Play</button><button class="ghost" id="stop2">Stop</button>
+    <button class="ghost" id="goListen">▶ Listen · കേൾക്കൂ</button>
+    <button class="primary" id="goPractice">Play · വായിക്കൂ</button><button class="ghost" id="stop2">Stop · നിർത്തൂ</button>
     <div id="summary" style="margin-top:10px;color:#bbb;font-size:13px"></div></div>
-  <div class="card"><h3>Asan says</h3><div id="coach" class="ml">—</div></div>
+  <div class="card"><h3>Ashaan says · <span class="ml">ആശാൻ പറയുന്നു</span></h3><div id="coach" class="mlbig">—</div></div>
 </aside></main>
 <script>
 const COLORS=["#ff3b30","#ff9500","#ffd60a","#34c759","#0a84ff"],NAMES=["thumb","index","middle","ring","pinky"];
@@ -64,13 +64,13 @@ function pad(){$("#pad").innerHTML=NAMES.map((n,i)=>`<div id="p${i}" style="bord
 function flash(i){const p=$("#p"+i);if(!p)return;p.classList.add("hit");setTimeout(()=>p.classList.remove("hit"),80);}
 function judge(t,c){const j=$("#judge");j.textContent=t;j.style.color=c;j.style.opacity=1;setTimeout(()=>j.style.opacity=0,300);}
 function connect(){ws=new WebSocket(`ws://${location.host}/ws`);ws.onmessage=e=>{const m=JSON.parse(e.data);
- if(m.type==="strike"){flash(m.finger);if(m.judge==="auto"){markNote(m.note,"auto");}else if(m.judge){const map={perfect:["PERFECT","#34c759"],good:["GOOD","#ffd60a"],late:["LATE","#ff9500"],early:["EARLY","#ff9500"],wrong_finger:["WRONG FINGER","#ff3b30"],extra:["—","#666"]};judge(...map[m.judge]);$("#pts").textContent=m.points;$("#streak").textContent=m.streak;if(m.note!=null)markNote(m.note,m.judge);}}
+ if(m.type==="strike"){flash(m.finger);if(m.judge==="auto"){markNote(m.note,"auto");}else if(m.judge){const map={perfect:["PERFECT · കൃത്യം","#34c759"],good:["GOOD · നല്ലത്","#ffd60a"],late:["LATE · വൈകി","#ff9500"],early:["EARLY · നേരത്തെ","#ff9500"],wrong_finger:["WRONG FINGER · തെറ്റായ വിരൽ","#ff3b30"],extra:["—","#666"]};judge(...map[m.judge]);$("#pts").textContent=m.points;$("#streak").textContent=m.streak;if(m.note!=null)markNote(m.note,m.judge);}}
  else if(m.type==="click"){const c=document.createElement("div");c.className="click";c.style.left=(m.finger*20)+"%";c.style.background=m.down?"rgba(255,214,10,.35)":"rgba(255,255,255,.08)";$("#lanes").appendChild(c);setTimeout(()=>c.remove(),120);}
- else if(m.type==="score"){setScore(m.score);$("#scoreInfo").textContent=`${m.score.title} · ${m.score.thaalam} · ${m.score.notes.length} notes · ${Math.round(m.score.bpm)} bpm — ${m.gemma||""}`;$("#tPractice").click();}
+ else if(m.type==="score"){setScore(m.score);const conf=m.confidence!=null?` · confidence ${Math.round(m.confidence*100)}%`:"";$("#scoreInfo").innerHTML=`${m.score.title} · ${m.score.thaalam} · ${m.score.notes.length} notes · ${Math.round(m.score.bpm)} bpm${conf}<br><span class="mlbig" style="font-size:14px">${m.summary_ml||""}</span><br><span class="en">${m.gemma||""}</span>`;$("#status").textContent=`${m.score.thaalam}${conf}`;$("#tPractice").click();}
  else if(m.type==="practice_start"){startPractice(m.score,m.lead_in_s);}
- else if(m.type==="miss"){m.notes.forEach(i=>markNote(i,"miss"));$("#streak").textContent=0;judge("MISS","#ff3b30");}
+ else if(m.type==="miss"){m.notes.forEach(i=>markNote(i,"miss"));$("#streak").textContent=0;judge("MISS · വിട്ടുപോയി","#ff3b30");}
  else if(m.type==="practice_end"){play=null;const s=m.summary;$("#summary").innerHTML=`${"★".repeat(s.stars)}${"☆".repeat(3-s.stars)} &nbsp; ${Math.round(s.accuracy*100)}% · ${s.points} pts<br>perfect ${s.perfect} · good ${s.good} · miss ${s.misses} · wrong finger ${s.wrong_finger}`;}
- else if(m.type==="coach"){$("#coach").innerHTML=`<div class="ml">${m.say_ml||""}</div><div style="color:#999;margin-top:6px">${m.say_en||""}</div>${m.drill_phrase!=null?`<div style="color:#777;font-size:12px;margin-top:6px">drill: phrase ${m.drill_phrase+1} @ ${Math.round(m.drill_bpm||0)} bpm</div>`:""}`;}
+ else if(m.type==="coach"){$("#coach").innerHTML=`<div class="mlbig">${m.say_ml||""}</div><div class="en">${m.say_en||""}</div>${m.say_manglish?`<div class="en" style="color:#777;font-style:italic">${m.say_manglish}</div>`:""}${m.drill_phrase!=null?`<div style="color:#777;font-size:12px;margin-top:6px">drill: phrase ${m.drill_phrase+1} @ ${Math.round(m.drill_bpm||0)} bpm</div>`:""}`;}
  else if(m.type==="status"){$("#status").textContent=m.text;}
  else if(m.type==="kit"){$("#status").textContent="kit: "+m.kit;}};ws.onclose=()=>setTimeout(connect,800);}
 document.addEventListener("keydown",e=>{if(e.repeat)return;const k=e.key.toLowerCase();if(k in KEYS||e.key===" "){e.preventDefault();ws.send(JSON.stringify({type:"key",key:e.key===" "?" ":k,v:.9}));}});
