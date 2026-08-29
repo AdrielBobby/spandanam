@@ -9,9 +9,10 @@ import numpy as np
 
 from .sound import KIT_PARAMS, SR, _drum
 
-# A chempada-ish 8-beat pattern over 5 voices (voice index = timbre low→high)
+# A chempada-ish 8-beat pattern over 5 voices (voice index = timbre low→high). Second half differs from the first
+# (answer phrase + cymbal on 8) so the true period is 8, not 4.
 PATTERN = [(0, 0), (0.5, 2), (1, 1), (1.5, 2), (2, 0), (2.5, 3), (3, 1), (3.5, 4),
-           (4, 0), (4.5, 2), (5, 1), (5.5, 2), (6, 0), (6.5, 3), (7, 1), (7.5, 4)]
+           (4, 0), (4.5, 1), (5, 3), (5.5, 1), (6, 2), (6.5, 2), (7, 0), (7.5, 4), (7.75, 4)]
 
 
 def render(bpm: float, cycles: int, kit: str = "chenda", seed: int = 0) -> np.ndarray:

@@ -180,6 +180,6 @@ def refine_tempo(tr: Transcription, octaves=(0.5, 1.0, 2.0), spread: float = 0.0
 
 
 def pick_cycle(scores: dict[int, float], tolerance: float = 0.85) -> int:
-    """Longest cycle within `tolerance` of the best score (sub-multiples of the true period score high too)."""
+    """Shortest cycle within `tolerance` of the best score: the true period; its multiples are trivially periodic too."""
     mx = max(scores.values()) if scores else 0.0
-    return max((c for c, v in scores.items() if v >= tolerance * mx), default=8) if mx > 0 else 8
+    return min((c for c, v in scores.items() if v >= tolerance * mx), default=8) if mx > 0 else 8
