@@ -37,3 +37,13 @@ def test_normalize_misspelled_keys_and_auto_phrases():
     fb = default_structure(90, 32)
     st = parse_structure(json.dumps({"beats_per_cycle": 8, "phrases": [[0, 8]]}), fb)
     assert len(st.phrases) >= 2
+
+
+def test_repair_json_handles_truncation_fences_and_trailing_commas():
+    from viral.gemma_thaalam import repair_json
+    assert json.loads(repair_json('```json\n{"a": 1, "b": [1, 2,]}\n```')) == {"a": 1, "b": [1, 2]}
+    d = json.loads(repair_json('{"title": "x", "phrases": [[0, 8], [8, 16'))
+    assert d["title"] == "x" and d["phrases"][0] == [0, 8]
+    d = json.loads(repair_json('{"title": "x", "notes_en": "cut off mid sen'))
+    assert d["title"] == "x"
+    assert repair_json('{"ok": true}') == '{"ok": true}'

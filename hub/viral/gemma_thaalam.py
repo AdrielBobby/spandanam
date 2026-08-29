@@ -22,6 +22,37 @@ def clean(text: str) -> str:
     """Strip sentencepiece artifacts Gemma sometimes leaks into JSON strings."""
     return text.replace("\u2581", " ").replace("  ", " ")
 
+
+def repair_json(text: str) -> str:
+    """Best-effort repair for small-model JSON: strip code fences/prose, drop trailing commas, close truncated brackets/strings."""
+    t = text.strip()
+    if "```" in t:
+        t = t.split("```")[1] if t.count("```") >= 2 else t.replace("```", "")
+        t = t[4:] if t.startswith("json") else t
+    start = t.find("{")
+    if start > 0:
+        t = t[start:]
+    try:
+        json.loads(t); return t
+    except json.JSONDecodeError:
+        pass
+    # cut back to the last complete value, then balance
+    import re
+    t = re.sub(r",\s*([}\]])", r"\1", t)                      # trailing commas
+    if t.count('"') % 2 == 1:
+        t = t[: t.rfind('"')]                                    # unterminated string
+    t = re.sub(r",\s*\"[^\"]*\"?\s*:?\s*$", "", t)             # dangling key
+    t = t.rstrip(", \n\t:")
+    stack = []
+    for ch in t:
+        if ch in "{[": stack.append("}" if ch == "{" else "]")
+        elif ch in "}]" and stack and stack[-1] == ch: stack.pop()
+    t += "".join(reversed(stack))
+    try:
+        json.loads(t); return t
+    except json.JSONDecodeError:
+        return text
+
 STRUCT_SYS = """You are a Kerala percussion asan and music analyst. You receive: estimated bpm, timbre clusters 0-4 (0=lowest/bassiest,
 4=brightest) with counts, and quantised events (beat, cluster, strength). Optionally a short audio clip. Decide:
 - thaalam: name (e.g. chempada/adi 8, panchari 6, thriputa 7/14, ekam 4, roopakam 6/3, or 'free') and beats_per_cycle
@@ -131,7 +162,7 @@ async def _chat(client: httpx.AsyncClient, url: str, model: str, system: str, us
             "messages": [{"role": "system", "content": system}, msg]}
     try:
         r = await client.post(f"{url}/api/chat", json=body, timeout=60.0); r.raise_for_status()
-        return clean(r.json()["message"]["content"])
+        return repair_json(clean(r.json()["message"]["content"]))
     except (httpx.HTTPError, KeyError) as e:
         log.warning("gemma failed: %s", e); return None
 
@@ -139,7 +170,7 @@ async def _chat(client: httpx.AsyncClient, url: str, model: str, system: str, us
 async def structure(client, url, model, bpm: float, profile: dict, events: list[tuple[float, int, float]],
                     wav: bytes | None, fallback: Structure) -> Structure:
     user = json.dumps({"bpm": round(bpm, 1), "clusters": profile, "events": events[:240], "fingers": FINGERS})
-    c = await _chat(client, url, model, STRUCT_SYS, user, wav, 500)
+    c = await _chat(client, url, model, STRUCT_SYS, user, wav, 900)
     try:
         return parse_structure(c, fallback) if c else fallback
     except (json.JSONDecodeError, ValueError, TypeError) as e:
