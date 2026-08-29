@@ -15,7 +15,9 @@ log = logging.getLogger(__name__)
 
 SYS = f"""You compose percussion for a 5-finger air-drum glove. Fingers 0..4 = thumb..pinky; thumb = bass, pinky = brightest.
 Use vaaythari syllables from: {", ".join(SYLLABLE_FINGER)} (syllable→finger: {json.dumps(SYLLABLE_FINGER)}).
-Write a learnable piece: a repeated motif, one variation, and a short kalasham (ending flourish) in the last cycle.
+Write a learnable piece of exactly `cycles` × `beats_per_cycle` beats: a repeated motif, one variation, and a short kalasham
+(ending flourish) in the last cycle. Rules: never the same syllable more than 2× in a row; each cycle uses at least 4 different
+syllables and 3 different fingers; 1–2 notes per beat; a few off-beat (x.5) notes for lift. Fill ALL cycles, not just the first.
 Notes are (beat, finger, label) with beat counted from 0 in quarter-beat steps. Return ONLY JSON:
 {{"title":"","bpm":90,"beats_per_cycle":8,"kit":"chenda","thaalam":"chempada 8",
  "finger_map":{{"names":["","","","",""],"syllables":["","","","",""]}},
