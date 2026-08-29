@@ -12,3 +12,4 @@ data/sessions/*
 
 assets/tracks/*
 !assets/tracks/.gitkeep
+assets/kits/
