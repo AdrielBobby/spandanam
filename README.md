@@ -64,9 +64,10 @@ cd hub && pytest
 ```
 
 ## Team
-- Ryyan Safar — [@ryyansafar](https://github.com/ryyansafar)
-- Adriel Bobby — [@AdrielBobby](https://github.com/AdrielBobby)
-- Fathima Moonam Kandathil — [@fathima-004](https://github.com/fathima-004)
+- Ryyan Safar — [@ryyansafar](https://github.com/ryyansafar) — AI/ML
+- Adriel Bobby — [@AdrielBobby](https://github.com/AdrielBobby) — backend
+- Fathima Moonam Kandathil — [@fathima-004](https://github.com/fathima-004) — hardware
+- Paulyn — UI
 
 ## Socials & Support
 - Portfolio: https://ryyansafar.site
