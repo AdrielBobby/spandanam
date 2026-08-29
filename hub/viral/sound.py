@@ -39,12 +39,43 @@ class Mixer:
 
     def __init__(self, sr: int = SR, max_voices: int = 24):
         import sounddevice as sd
-        import threading
+        import threading, time
         self.sd, self.sr, self.max_voices = sd, sr, max_voices
         self._voices: list[tuple[np.ndarray, int]] = []          # (buffer, position)
         self._lock = threading.Lock()
-        self.stream = sd.OutputStream(samplerate=sr, channels=1, dtype="float32", blocksize=256, callback=self._cb)
+        self._time = time
+        self._last_check = 0.0
+        self.device_name = ""
+        self.stream = None
+        self._open()
+
+    def _open(self) -> None:
+        """(Re)open the output stream on the CURRENT system default device (headphones plugged in later, stage speaker...)."""
+        if self.stream is not None:
+            try: self.stream.stop(); self.stream.close()
+            except Exception: pass
+        self.sd.default.device = None                              # re-resolve the default
+        info = self.sd.query_devices(kind="output")
+        self.device_name = str(info["name"])
+        self.stream = self.sd.OutputStream(samplerate=self.sr, channels=1, dtype="float32", blocksize=256, callback=self._cb)
         self.stream.start()
+        log.info("audio output -> %s", self.device_name)
+
+    def ensure_device(self) -> None:
+        """Cheap poll (max every 2 s): if the OS default output changed, follow it."""
+        now = self._time.monotonic()
+        if now - self._last_check < 2.0:
+            return
+        self._last_check = now
+        try:
+            self.sd._terminate(); self.sd._initialize()             # PortAudio caches the device list; refresh it
+            name = str(self.sd.query_devices(kind="output")["name"])
+        except Exception:
+            return
+        if name != self.device_name:
+            log.info("default output changed: %s -> %s", self.device_name, name)
+            with self._lock: self._voices = []
+            self._open()
 
     def _cb(self, out, frames, _time, _status):
         mix = np.zeros(frames, dtype=np.float32)
@@ -60,6 +91,7 @@ class Mixer:
         out[:, 0] = mix
 
     def trigger(self, buf: np.ndarray) -> None:
+        self.ensure_device()
         with self._lock:
             if len(self._voices) >= self.max_voices:
                 self._voices.pop(0)

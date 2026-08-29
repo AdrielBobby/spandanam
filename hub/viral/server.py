@@ -191,6 +191,7 @@ def create_app(cfg: Config) -> FastAPI:
     @app.get("/api/state")
     async def state():
         return {"mode": hub.mode, "bpm": hub.bpm, "cycle": hub.cycle, "kit": hub.sampler.kit, "kits": KITS, "keys": FINGER_KEYS, "labels_ml": LABELS_ML,
+                "audio_device": getattr(hub.sampler.mixer, "device_name", None),
                 "score": json.loads(hub.score.to_json()) if hub.score else None, "dry": cfg.dry}
 
     @app.post("/api/learn")
