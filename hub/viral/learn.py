@@ -1,6 +1,8 @@
 """Learn pipeline: audio file -> transcription (deterministic) -> Gemma structure -> finger Score."""
 from __future__ import annotations
 
+import hashlib
+import json
 import logging
 from pathlib import Path
 
@@ -34,7 +36,26 @@ def _clip_wav(path: str, seconds: float = 6.0) -> bytes | None:
         log.debug("clip failed: %s", e); return None
 
 
-async def learn_from_file(path: Path, ollama_url: str, model: str, use_audio: bool = True) -> tuple[Score, Structure]:
+def _cache_path(path: Path, model: str) -> Path:
+    h = hashlib.sha1(path.read_bytes()).hexdigest()[:12]
+    return path.with_name(f".{path.stem}.{h}.{model.replace(':', '_')}.score.json")
+
+
+async def learn_from_file(path: Path, ollama_url: str, model: str, use_audio: bool = True, use_cache: bool = True) -> tuple[Score, Structure]:
+    """Audio -> Score. Cached per (file content, model) so re-learning a demo track is instant."""
+    cache = _cache_path(path, model)
+    if use_cache and cache.exists():
+        try:
+            d = json.loads(cache.read_text())
+            from .score import score_from_dict
+            st = Structure(**{k: (tuple(v) if isinstance(v, list) and k in ("names", "syllables") else
+                                  tuple(tuple(x) for x in v) if k == "phrases" else
+                                  {int(a): int(b) for a, b in v.items()} if k == "cluster_to_finger" else v)
+                              for k, v in d["structure"].items()})
+            log.info("learn cache hit %s", cache.name)
+            return score_from_dict(d["score"]), st
+        except Exception as e:  # corrupt cache -> recompute
+            log.warning("cache unreadable (%s), recomputing", e)
     tr = transcribe(str(path))
     events = onsets_to_beats(tr, tr.bpm)
     n_beats = (events[-1][0] + 1) if events else 8.0
@@ -44,4 +65,10 @@ async def learn_from_file(path: Path, ollama_url: str, model: str, use_audio: bo
     score = build_score(events, st, tr.bpm)
     if score.title == "untitled":
         score = Score(path.stem, score.bpm, score.beats_per_cycle, score.notes, score.finger_map, score.kit, score.thaalam, score.phrases)
+    if use_cache:
+        from dataclasses import asdict
+        try:
+            cache.write_text(json.dumps({"score": json.loads(score.to_json()), "structure": asdict(st)}, ensure_ascii=False))
+        except OSError as e:
+            log.debug("cache write failed: %s", e)
     return score, st

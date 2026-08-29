@@ -81,8 +81,12 @@ plus the finger names/syllables. Do not recompute or contradict the facts: if do
 choice (never about rushing/dragging); if it is late/early talk about timing; if missed, about keeping up. Name the weak fingers
 and syllables from the facts. One observation, one physical fix (finger/wrist/breathing), one drill using recommended_phrase and
 recommended_bpm. Manglish = Malayalam words in Latin letters mixed with English music terms (use Malayalam, not Kannada/Tamil/Hindi words).
+Manglish examples of the tone we want (do not copy, adapt to the facts):
+ - "Ring finger konjam late aanu, 'ka' il. Wrist relax cheyyu. Phrase 2, 72 bpm il onnu koode."
+ - "Kollam! Timing sheri aayi. Ippo 'thom' il shakthi kooti, phrase 3, 90 bpm."
+ - "Middle finger 'ta' miss aavunnu. Slow aayi thudanguka — 60 bpm, phrase 1."
 Return ONLY JSON:
-{"say_en":"<=30 words","say_ml":"<=30 words of spoken Malayalam written in Latin letters (Manglish), e.g. 'ring finger pathukke, 80 bpm il thudanguka'","drill_phrase":index,"drill_bpm":number,"focus":"timing|finger|dynamics|reward"}"""
+{"say_en":"<=30 words","say_ml":"<=30 words Manglish like the examples","drill_phrase":index,"drill_bpm":number,"focus":"timing|finger|dynamics|reward"}"""
 
 
 @dataclass(frozen=True)
