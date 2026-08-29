@@ -17,6 +17,7 @@ from . import judge
 from .config import FINGER_KEYS, KITS, Config
 from .events import Strike
 from .bridge import analysis_for_coach, analyze_attempt, phrase_to_score
+from .gemma_game import next_round
 from .gemma_thaalam import coach
 from .gemini_compose import compose
 from .hardware import Glove
@@ -44,6 +45,7 @@ class Hub:
         self.stop_metro = asyncio.Event(); self.metro_task: asyncio.Task | None = None
         self.http = httpx.AsyncClient()
         self.last_summary: dict = {}
+        self.game_level = 0; self.game_history: list[dict] = []
 
     async def broadcast(self, msg: dict) -> None:
         dead = []
@@ -179,6 +181,16 @@ def create_app(cfg: Config) -> FastAPI:
                 elif t == "practice": await hub.start_practice(m.get("phrase"), float(m.get("speed", 1.0)))
                 elif t == "stop": await hub.stop_all(); hub.mode = "idle"
                 elif t == "load_score": hub.score = score_from_dict(m.get("score", {}))
+                elif t == "game":                        # Repeat after Maveli: next round (level up on pass, same level on fail)
+                    passed = bool(m.get("passed", True))
+                    if hub.game_history: hub.game_history[-1]["result"] = "pass" if passed else "fail"
+                    hub.game_level = hub.game_level + 1 if passed else max(1, hub.game_level)
+                    if m.get("reset"): hub.game_level, hub.game_history = 1, []
+                    r = await next_round(hub.http, cfg.ollama_url, cfg.gemma_model, hub.game_level, hub.game_history)
+                    hub.game_history.append({"level": r.level, "phrase": list(r.phrase), "bpm": r.bpm})
+                    hub.score = phrase_to_score(list(r.phrase), r.bpm, title=f"Maveli L{r.level}", cycles=1)
+                    await hub.broadcast({"type": "game", "level": r.level, "phrase": list(r.phrase), "bpm": r.bpm, "banter": r.banter, "source": r.source})
+                    await hub.broadcast({"type": "score", "score": json.loads(hub.score.to_json()), "gemma": r.banter})
                 elif t == "phrase":                      # vaaythari phrase -> practice score (uses asan.config.SYLLABLE_FINGER)
                     try:
                         hub.score = phrase_to_score([x for x in str(m.get("text", "")).replace("-", " ").split() if x], float(m.get("bpm", hub.bpm)), cycles=int(m.get("cycles", 2)))
