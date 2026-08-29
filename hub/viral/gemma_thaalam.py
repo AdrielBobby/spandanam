@@ -64,14 +64,11 @@ many beats), a per-cluster beat histogram, and the opening pattern as "beat:clus
 - kit: chenda|mridangam|tabla|kit ; title: short; kaalam: 1-3 (tempo stage)
 Return ONLY JSON: {"title":"","thaalam":"","beats_per_cycle":8,"kit":"chenda","kaalam":1,
  "finger_map":{"cluster_to_finger":{"0":0,"1":1,"2":2,"3":3,"4":4},"names":["","","","",""],"syllables":["","","","",""]},
- "phrases":[[0,8]], "notes_en":"<=25 words on the rhythm's character"}
+ "phrases":[[0,8]], "notes_en":"<=25 words on the rhythm's character",
+ "evidence":"<=20 words: which periodicity/histogram numbers led to beats_per_cycle", "confidence":0-1}
 
-Example input: {"bpm": 96, "clusters": {"0": {"centroid_hz": 140, "count": 16}, "1": {"centroid_hz": 420, "count": 16}, "2": {"centroid_hz": 900, "count": 16},
- "3": {"centroid_hz": 1800, "count": 8}, "4": {"centroid_hz": 4200, "count": 8}}, "events": [[0,0,1.0],[0.5,2,0.6],[1,1,0.8],[1.5,2,0.5],[2,0,0.9],[2.5,3,0.6],[3,1,0.8],[3.5,4,0.4], ...]}
-Example output: {"title":"Chempada practice","thaalam":"chempada (adi) 8","beats_per_cycle":8,"kit":"chenda","kaalam":1,
- "finger_map":{"cluster_to_finger":{"0":0,"1":1,"2":2,"3":3,"4":4},"names":["valanthala","idanthala-open","idanthala-closed","rim","elathalam"],
- "syllables":["thom","tha","ki","ta","ri"]},"phrases":[[0,8],[0,16],[0,32]],
- "notes_en":"Steady 8-beat chempada: bass on 1 and 5, treble answers on the off-beats, cymbal colour on 4 and 8."}
+Never copy sample text; every value must come from THIS digest. Names must be the chosen kit's voices in low→high order
+(chenda: valanthala, idanthala-open, idanthala-closed, rim, elathalam; mridangam: thom, nam, dhin, chapu, arai; tabla: ge, na, tin, te, ke).
 Rules: cluster 0 is the lowest timbre. Never output a finger index outside 0-4. Keep every key exactly as spelled above.
 Thaalam hints: panchari = 6 beats (pathikaalam very slow, later kaalams double); pandi = 7 (often felt as 14); chempada/adi = 8;
 ekam = 4; thriputa = 7; roopakam = 3/6. Use cycle_periodicity + beat_histogram as evidence; if unclear prefer best_cycle_guess.
@@ -100,6 +97,8 @@ class Structure:
     phrases: tuple[tuple[float, float], ...]
     notes_en: str
     raw: str = "{}"
+    evidence: str = ""
+    confidence: float = 0.0
 
 
 def default_structure(bpm_hint: float, n_beats: float) -> Structure:
@@ -111,7 +110,7 @@ def default_structure(bpm_hint: float, n_beats: float) -> Structure:
 
 EXPECTED_KEYS = ("title", "thaalam", "beats_per_cycle", "kit", "kaalam", "finger_map", "phrases", "notes_en",
                  "cluster_to_finger", "names", "syllables", "say_en", "say_ml", "drill_phrase", "drill_bpm", "focus",
-                 "phrase", "bpm", "banter")
+                 "phrase", "bpm", "banter", "evidence", "confidence")
 
 
 def _similar(a: str, b: str) -> bool:
@@ -156,7 +155,8 @@ def parse_structure(content: str, fallback: Structure) -> Structure:
         phrases = auto_phrases(max(fallback.phrases[-1][1] if fallback.phrases else cycle, cycle), cycle)
     return Structure(str(d.get("title", fallback.title)), str(d.get("thaalam", fallback.thaalam)),
                      cycle, kit, int(d.get("kaalam", 1)),
-                     c2f, names, syl, phrases, str(d.get("notes_en", "")), content)
+                     c2f, names, syl, phrases, str(d.get("notes_en", "")), content,
+                     str(d.get("evidence", "")), float(min(1.0, max(0.0, d.get("confidence", 0.5)))))
 
 
 async def _chat(client: httpx.AsyncClient, url: str, model: str, system: str, user: str, wav: bytes | None, n: int) -> str | None:
@@ -177,7 +177,7 @@ async def structure(client, url, model, bpm: float, profile: dict, events: list[
     user = (json.dumps({"digest": digest(bpm, profile, events), "fingers": FINGERS}) +
             '\nFill exactly this JSON (no events, no extra keys): {"title":"","thaalam":"","beats_per_cycle":8,"kit":"chenda","kaalam":1,'
             '"finger_map":{"cluster_to_finger":{"0":0,"1":1,"2":2,"3":3,"4":4},"names":["","","","",""],"syllables":["","","","",""]},'
-            '"phrases":[[0,8]],"notes_en":""}')
+            '"phrases":[[0,8]],"notes_en":"","evidence":"","confidence":0.5}')
     c = await _chat(client, url, model, STRUCT_SYS, user, wav, 450)
     try:
         return parse_structure(c, fallback) if c else fallback

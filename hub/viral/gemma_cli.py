@@ -52,7 +52,7 @@ async def do_structure(cfg: Config, path: str | None, fake: bool) -> None:
         Path(path).with_suffix(".score.json").write_text(sc.to_json())
     print(f"[{time.time() - t0:.1f}s] {sc.title} · {sc.thaalam} · cycle {sc.beats_per_cycle} · kit {sc.kit} · {len(sc.notes)} notes")
     print("fingers:", list(zip(sc.finger_map.names, sc.finger_map.syllables)))
-    print("phrases:", sc.phrases); print("gemma:", st.notes_en); print("raw:", st.raw[:400])
+    print("phrases:", sc.phrases); print("gemma:", st.notes_en); print(f"evidence ({st.confidence:.2f}):", st.evidence); print("raw:", st.raw[:400])
 
 
 async def do_coach(cfg: Config) -> None:
