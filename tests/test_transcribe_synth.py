@@ -31,3 +31,16 @@ def test_learn_cache_roundtrip(tmp_path, monkeypatch):
     s2, st2 = asyncio.run(L.learn_from_file(p, "http://x", "m"))
     assert calls["n"] == 1 and s1.notes == s2.notes and st2.beats_per_cycle == st1.beats_per_cycle and st2.cluster_to_finger == st1.cluster_to_finger
     assert L._cache_path(p, "m").exists()
+
+
+def test_reconcile_cycle_overrides_unrelated_gemma_cycle_when_evidence_strong():
+    from viral.learn import reconcile_cycle
+    from viral.gemma_thaalam import default_structure
+    from dataclasses import replace
+    st = replace(default_structure(96, 32), beats_per_cycle=12, thaalam="panchari (12)")
+    out = reconcile_cycle(st, {4: 0.3, 6: 0.1, 8: 0.6, 12: 0.2, 16: 0.4}, 96)
+    assert out.beats_per_cycle == 8 and "chempada" in out.thaalam and "cycle set to 8" in out.evidence
+    weak = reconcile_cycle(st, {4: 0.1, 8: 0.12, 12: 0.05}, 96)
+    assert weak.beats_per_cycle == 12                       # weak evidence: Gemma's call stands
+    rel = reconcile_cycle(replace(st, beats_per_cycle=16), {8: 0.6, 16: 0.4}, 96)
+    assert rel.beats_per_cycle == 16                        # related (2x) allowed
