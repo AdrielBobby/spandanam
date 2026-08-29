@@ -15,6 +15,8 @@ Hackathon mode: small commits, push often, `main` is always demo‑able. Project
 Dashboard → server: `key{key,v}` · `free{bpm,cycle,click}` · `kit{kit}` · `practice{phrase,speed}` · `listen{phrase,speed}` (auto-plays the score through speaker + LEDs, `practice_start` carries `listen:true`, strikes carry `judge:"auto"`) · `stop` · `phrase{text,bpm,cycles}` · `load_score{score}` · `game{passed?,reset?}` (Repeat after Maveli: `reset:true` starts at level 1; send `passed` from the last `practice_end` — stars ≥ 2 = pass) · `ladder{phrase?,scales?}` (kaalam ladder: default scales `[0.6,0.8,1.0,2.0]`; sending `practice`/`listen`/`free`/`stop` cancels any ladder in progress).
 Add a message type? Add it here in the same commit.
 
+**Vaaythari karaoke (TTS chant).** When Practice or Listen starts (including each round of a kaalam ladder — it calls `start_practice` internally), the server chants the score's vaaythari syllables aloud via `speech.chant()` (espeak-ng / macOS `say`), timed to the score's bpm. Runs in a thread executor during the round's lead-in, off the event loop, since it's a blocking subprocess call. No new WS message — it's server-side audio only. Silently skipped for scores with no `Note.label` (e.g. some learn/compose results), and silently logs instead of speaking if neither TTS backend is installed — see `speech.py`.
+
 **Kaalam ladder example session** (not yet wired into `static/index.html` — falling notes/judging/coaching already play through unchanged via the existing `practice_start`/`strike`/`practice_end`/`coach` handling; only the step/scale narration below needs new UI):
 ```jsonc
 // client, once a phrase/score is loaded:
