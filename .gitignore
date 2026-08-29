@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.venv/
+.env
+*.egg-info/
+.pytest_cache/
+data/sessions/*
+!data/sessions/.gitkeep
+firmware/**/build/
+.DS_Store
+firmware/melam_node/config.h
