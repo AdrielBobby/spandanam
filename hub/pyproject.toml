@@ -10,8 +10,10 @@ dependencies = [
 ]
 [project.optional-dependencies]
 dev = ["pytest>=8", "pytest-cov>=5"]
+dashboard = ["fastapi>=0.115", "uvicorn[standard]>=0.30"]
 [tool.pytest.ini_options]
 testpaths = ["../tests"]
+<<<<<<< HEAD
 pythonpath = ["."]
 
 [build-system]
@@ -23,3 +25,6 @@ packages = ["asan", "viral"]
 
 [tool.setuptools.package-data]
 viral = ["static/*"]
+=======
+pythonpath = [".", ".."]
+>>>>>>> a09927a (feat: add JSONL logging and minimal FastAPI dashboard backend)

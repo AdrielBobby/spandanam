@@ -9,11 +9,14 @@ msvcrt.getwch() and has no notion of a deadline.
 from __future__ import annotations
 
 import argparse
+import json
 import platform
 import time
+from datetime import datetime
+from pathlib import Path
 from typing import Sequence
 
-from .analysis import analyze
+from .analysis import PracticeAnalysis, analyze
 from .input_sources import InputEvent, KeyboardSimulator, is_quit_key, normalize_key
 from .practice import (
     collection_window_ms,
@@ -24,10 +27,13 @@ from .practice import (
     summarize,
     to_relative_event,
 )
-from .scheduler import ExpectedEvent, TimingWindow, build_schedule, format_lanes, score_events
+from .scheduler import ExpectedEvent, ScoreResult, TimingWindow, build_schedule, format_lanes, score_events
 
 PHRASE = ["dhim", "tha", "ka", "ta", "ki"]
 POLL_INTERVAL_S = 0.005  # 5ms: responsive enough, negligible CPU for a hackathon prototype
+
+# repo_root/logs/practice.jsonl — one JSON line per completed round, read by dashboard/server.py.
+LOG_PATH = Path(__file__).resolve().parents[2] / "logs" / "practice.jsonl"
 
 
 def positive_bpm(value: str) -> float:
@@ -145,6 +151,57 @@ def collect_events(
     return events, quit_requested
 
 
+def build_log_entry(
+    results: Sequence[ScoreResult],
+    phrase: Sequence[str],
+    tempo_bpm: float,
+    analysis: PracticeAnalysis,
+    now: datetime | None = None,
+) -> dict:
+    """Build one JSONL log entry from a completed round's results, phrase, tempo, and
+    coaching analysis. Pure and deterministic given `now`; no file or clock access
+    unless now is omitted (defaults to the local current time)."""
+    now = now if now is not None else datetime.now().astimezone()
+    summary = summarize(results).as_dict()
+    analysis_dict = analysis.as_dict()
+    beats = [
+        {
+            "index": r.expected.beat_index,
+            "bol": r.expected.bol,
+            "expected_finger": r.expected.finger,
+            "expected_ms": r.expected.expected_time_ms,
+            "actual_finger": r.actual.finger if r.actual is not None else None,
+            "actual_ms": r.actual.timestamp_ms if r.actual is not None else None,
+            "error_ms": r.timing_error_ms,
+            "outcome": r.outcome.value,
+        }
+        for r in results
+        if r.expected is not None
+    ]
+    return {
+        "timestamp": now.isoformat(),
+        "session_id": now.date().isoformat(),
+        "phrase": list(phrase),
+        "tempo_bpm": tempo_bpm,
+        "summary": {
+            **summary,
+            "dominant_error": analysis_dict["dominant_error"],
+            "weak_fingers": analysis_dict["weak_fingers"],
+            "weak_bols": analysis_dict["weak_bols"],
+            "recommended_tempo_bpm": analysis_dict["recommended_tempo_bpm"],
+            "recommended_phrase": analysis_dict["recommended_phrase"],
+        },
+        "beats": beats,
+    }
+
+
+def append_log_entry(entry: dict, path: Path = LOG_PATH) -> None:
+    """Append one JSON line to path, creating its parent directory if needed."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(entry) + "\n")
+
+
 def main() -> None:
     args = parse_args()
     window = TimingWindow()
@@ -185,6 +242,8 @@ def main() -> None:
         print(f"Weak fingers: {', '.join(analysis.weak_fingers)}")
     if analysis.weak_bols:
         print(f"Weak bols: {', '.join(analysis.weak_bols)}")
+
+    append_log_entry(build_log_entry(results, PHRASE, args.bpm, analysis))
 
     if quit_requested:
         print()
