@@ -10,6 +10,33 @@ SYLLABLES = {
 }
 ACCENT_SYLLABLES = {"dhim", "thom"}
 
+# --- 5-finger hardware model (prototype) --------------------------------------------
+# One IMU + buzzer + LED channel per finger. This syllable->finger grouping is a first
+# guess for the hackathon build, not a musicological claim — expect to revise it after
+# wearing the glove and testing with a real player.
+FINGERS = ("thumb", "index", "middle", "ring", "pinky")
+
+SYLLABLE_FINGER = {
+    "thom": "thumb", "dhim": "thumb",
+    "tha": "index", "dhi": "index",
+    "ta": "middle",
+    "ki": "ring", "ka": "ring",
+    "mi": "pinky", "num": "pinky", "ri": "pinky",
+}
+
+
+def validate_syllable_finger_mapping(mapping: dict[str, str]) -> None:
+    """Raise ValueError unless every syllable in SYLLABLES has a finger assignment in FINGERS."""
+    missing = sorted(s for s in SYLLABLES if s not in mapping)
+    if missing:
+        raise ValueError(f"missing finger assignment for syllables: {missing}")
+    unknown = sorted({f for f in mapping.values() if f not in FINGERS})
+    if unknown:
+        raise ValueError(f"unknown finger name(s): {unknown}")
+
+
+validate_syllable_finger_mapping(SYLLABLE_FINGER)
+
 # Starter phrases (the asan composes new ones beyond these)
 SEED_PHRASES = {
     "thakita": ["tha", "ki", "ta"],
