@@ -13,6 +13,7 @@ import platform
 import time
 from typing import Sequence
 
+from .analysis import analyze
 from .input_sources import InputEvent, KeyboardSimulator, is_quit_key, normalize_key
 from .practice import (
     collection_window_ms,
@@ -173,6 +174,17 @@ def main() -> None:
     print()
     for key, value in summarize(results).as_dict().items():
         print(f"{key}: {value}")
+
+    analysis = analyze(results, PHRASE, args.bpm)
+    print()
+    print("=== Coaching ===")
+    print(analysis.deterministic_feedback)
+    print(f"Next tempo: {analysis.recommended_tempo_bpm} bpm")
+    print(f"Practice phrase: {'-'.join(analysis.recommended_phrase)}")
+    if analysis.weak_fingers:
+        print(f"Weak fingers: {', '.join(analysis.weak_fingers)}")
+    if analysis.weak_bols:
+        print(f"Weak bols: {', '.join(analysis.weak_bols)}")
 
     if quit_requested:
         print()
