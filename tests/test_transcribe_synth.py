@@ -24,7 +24,7 @@ def test_learn_cache_roundtrip(tmp_path, monkeypatch):
     from viral.gemma_thaalam import default_structure
     p = tmp_path / "t.wav"; sf.write(p, render(96, 2), SR)
     calls = {"n": 0}
-    async def fake_structure(client, url, model, bpm, profile, events, wav, fb):
+    async def fake_structure(client, url, model, bpm, profile, events, wav, fb, *a):
         calls["n"] += 1; return default_structure(bpm, 16)
     monkeypatch.setattr(L, "structure", fake_structure)
     s1, st1 = asyncio.run(L.learn_from_file(p, "http://x", "m"))

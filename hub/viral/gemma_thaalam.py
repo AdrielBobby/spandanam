@@ -181,8 +181,8 @@ async def _chat(client: httpx.AsyncClient, url: str, model: str, system: str, us
 
 
 async def structure(client, url, model, bpm: float, profile: dict, events: list[tuple[float, int, float]],
-                    wav: bytes | None, fallback: Structure) -> Structure:
-    dg = digest(bpm, profile, events)
+                    wav: bytes | None, fallback: Structure, scores: dict[int, float] | None = None) -> Structure:
+    dg = digest(bpm, profile, events, scores=scores)
     guess = int(dg["best_cycle_guess"])
     user = (json.dumps({"digest": dg, "fingers": FINGERS}) +
             f'\nFill exactly this JSON (no events, no extra keys). beats_per_cycle defaults to the evidence-based guess {guess} unless you '

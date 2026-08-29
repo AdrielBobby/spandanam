@@ -11,7 +11,7 @@ import httpx
 from .config import FINGER_COLORS
 from .gemma_thaalam import Structure, default_structure, structure
 from .score import FingerMap, Note, Score
-from .transcribe import onsets_to_beats, transcribe
+from .transcribe import quantize_onsets, refine_tempo, transcribe
 
 log = logging.getLogger(__name__)
 
@@ -57,12 +57,13 @@ async def learn_from_file(path: Path, ollama_url: str, model: str, use_audio: bo
         except Exception as e:  # corrupt cache -> recompute
             log.warning("cache unreadable (%s), recomputing", e)
     tr = transcribe(str(path))
-    events = onsets_to_beats(tr, tr.bpm)
+    bpm, scores = refine_tempo(tr)                      # octave + drift corrected
+    events = quantize_onsets(tr, bpm)
     n_beats = (events[-1][0] + 1) if events else 8.0
-    fb = default_structure(tr.bpm, n_beats)
+    fb = default_structure(bpm, n_beats)
     async with httpx.AsyncClient() as client:
-        st = await structure(client, ollama_url, model, tr.bpm, tr.cluster_profile, events, _clip_wav(str(path)) if use_audio else None, fb)
-    score = build_score(events, st, tr.bpm)
+        st = await structure(client, ollama_url, model, bpm, tr.cluster_profile, events, _clip_wav(str(path)) if use_audio else None, fb, scores)
+    score = build_score(events, st, bpm)
     if score.title == "untitled":
         score = Score(path.stem, score.bpm, score.beats_per_cycle, score.notes, score.finger_map, score.kit, score.thaalam, score.phrases)
     if use_cache:

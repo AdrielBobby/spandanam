@@ -111,11 +111,12 @@ def cycle_table(events: list[tuple[float, int, float]]) -> dict[str, dict[int, f
     return out
 
 
-def digest(bpm: float, profile: dict, events: list[tuple[float, int, float]], head: int = 32) -> dict:
-    """What Gemma actually reads: small, structured, evidence-rich."""
-    cs = cycle_scores(events, (6, 7, 8, 12, 14, 16))
+def digest(bpm: float, profile: dict, events: list[tuple[float, int, float]], head: int = 32,
+           scores: dict[int, float] | None = None) -> dict:
+    """What Gemma actually reads: small, structured, evidence-rich. `scores` = per-timbre periodicity (preferred)."""
+    cs = scores if scores is not None else cluster_cycle_scores(events)
     mx = max(cs.values()) if cs else 0.0
-    best = max((k for k, v in cs.items() if v >= 0.85 * mx), default=8) if mx > 0 else 8
+    best = pick_cycle(cs)
     return {
         "bpm": round(bpm, 1),
         "n_events": len(events),
@@ -123,7 +124,62 @@ def digest(bpm: float, profile: dict, events: list[tuple[float, int, float]], he
         "cycle_periodicity": {str(k): v for k, v in cs.items()},
         "cycle_periodicity_by_tempo": {lab: {str(k): v for k, v in tbl.items()} for lab, tbl in cycle_table(events).items()},
         "best_cycle_guess": best,
-        "evidence_strength": "strong" if mx > 0.4 else "weak" if mx > 0.15 else "very weak",
+        "evidence_strength": "strong" if mx > 0.35 else "weak" if mx > 0.12 else "very weak",
+        "note": "cycle_periodicity = per-timbre autocorrelation at the refined tempo; sub-multiples of the true cycle also score high",
         "beat_histogram_at_best_cycle": {str(k): v for k, v in beat_histogram(events, best).items()},
         "opening_pattern": " ".join(f"{b:g}:{c}" for b, c, _ in events[:head]),
     }
+
+
+# ---------- per-timbre periodicity + tempo refinement (the discriminative version) ----------
+CYCLE_CANDIDATES_V2 = (4, 6, 7, 8, 12, 14, 16)
+
+
+def quantize_onsets(tr: Transcription, bpm: float, grid: float = GRID) -> list[tuple[float, int, float]]:
+    if not tr.onsets:
+        return []
+    t0 = tr.onsets[0].t_s; beat = 60.0 / bpm
+    return [(round((o.t_s - t0) / beat / grid) * grid, o.cluster, o.strength) for o in tr.onsets]
+
+
+def cluster_cycle_scores(events: list[tuple[float, int, float]], candidates=CYCLE_CANDIDATES_V2) -> dict[int, float]:
+    """Periodicity of WHICH timbre hits WHERE: autocorrelation per cluster grid, count-weighted average. 0..1.
+    Unlike the plain onset grid this is not dominated by the beat pulse, so cycle lengths separate."""
+    if len(events) < 8:
+        return {c: 0.0 for c in candidates}
+    n = int(max(b for b, _, _ in events) / GRID) + 1
+    out = {c: 0.0 for c in candidates}; wsum = 0.0
+    for k in {c for _, c, _ in events}:
+        g = np.zeros(n)
+        for b, c, s in events:
+            if c == k:
+                i = int(round(b / GRID)); g[i] = max(g[i], s)
+        gm = g - g.mean(); den = float(gm @ gm) or 1.0; w = float((g > 0).sum())
+        for c in candidates:
+            lag = int(c / GRID)
+            if lag < n:
+                out[c] += w * max(0.0, float(gm[:-lag] @ gm[lag:]) / den)
+        wsum += w
+    return {c: round(v / wsum, 3) if wsum else 0.0 for c, v in out.items()}
+
+
+def refine_tempo(tr: Transcription, octaves=(0.5, 1.0, 2.0), spread: float = 0.05, steps: int = 41) -> tuple[float, dict[int, float]]:
+    """Search tempo octaves × ±spread for the bpm whose grid makes the timbre pattern most periodic.
+    Fixes the two classic failures: octave errors and a 1–3 % tempo drift that destroys long-lag correlation."""
+    best = None
+    for k in octaves:
+        for r in np.linspace(1 - spread, 1 + spread, steps):
+            bpm = tr.bpm * k * r
+            if not 40 <= bpm <= 240:
+                continue
+            cs = cluster_cycle_scores(quantize_onsets(tr, bpm))
+            adj = max(cs.values()) - 0.06 * abs(np.log2(k))
+            if best is None or adj > best[0]:
+                best = (adj, float(bpm), cs)
+    return (best[1], best[2]) if best else (tr.bpm, cluster_cycle_scores(quantize_onsets(tr, tr.bpm)))
+
+
+def pick_cycle(scores: dict[int, float], tolerance: float = 0.85) -> int:
+    """Longest cycle within `tolerance` of the best score (sub-multiples of the true period score high too)."""
+    mx = max(scores.values()) if scores else 0.0
+    return max((c for c, v in scores.items() if v >= tolerance * mx), default=8) if mx > 0 else 8
