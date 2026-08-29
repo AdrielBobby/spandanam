@@ -23,6 +23,7 @@ from .gemini_compose import compose
 from .gemma_compose import compose_gemma
 from .hardware import Glove
 from .imu import MPU6050Reader
+from .ladder import DEFAULT_SCALES, Ladder, advance
 from .learn import learn_from_file
 from .malayalam import LABELS_ML, coach_ml, structure_ml
 from .metronome import run_metronome
@@ -44,6 +45,7 @@ class Hub:
         self.mode = "free"; self.bpm = 90.0; self.cycle = 8; self.click_mode = "walk"
         self.score: Score | None = None
         self.play: judge.PlayState | None = None
+        self.ladder: Ladder | None = None
         self.stop_metro = asyncio.Event(); self.metro_task: asyncio.Task | None = None
         self.http = httpx.AsyncClient()
         self.last_summary: dict = {}
@@ -127,6 +129,14 @@ class Hub:
         await self.broadcast({"type": "practice_start", "score": json.loads(sc.to_json()), "lead_in_s": lead_in})
         asyncio.create_task(self._practice_loop(sc))
 
+    # ---- kaalam ladder: practice the same phrase up through a sequence of tempo
+    # steps, auto-advancing (or retrying) after each round -- see _practice_loop.
+    async def start_ladder(self, phrase: int | None, scales: tuple[float, ...] = DEFAULT_SCALES) -> None:
+        if not self.score: return
+        self.ladder = Ladder(scales, phrase, 0)
+        await self.broadcast({"type": "ladder_start", "total_steps": self.ladder.total_steps, "bpm_scale": self.ladder.bpm_scale})
+        await self.start_practice(phrase, self.ladder.bpm_scale)
+
     async def _practice_loop(self, sc: Score) -> None:
         cued: set[int] = set()
         end = self.play.start_s + sc.length_beats * sc.beat_s + 0.3
@@ -153,6 +163,15 @@ class Hub:
                               list(analysis.weak_bols), fb.get("drill_bpm") or analysis.recommended_tempo_bpm, fb.get("drill_phrase"))
                 fb = {**fb, "say_manglish": fb.get("say_ml", ""), "say_ml": ml}
             await self.broadcast({"type": "coach", **fb})
+            if self.ladder:
+                prev, result = self.ladder, advance(self.ladder, self.last_summary["stars"])
+                self.ladder = result.ladder
+                await self.broadcast({"type": f"ladder_{result.event}", "total_steps": prev.total_steps,
+                                       "step": self.ladder.step if self.ladder else None,
+                                       "bpm_scale": self.ladder.bpm_scale if self.ladder else None})
+                if self.ladder:                                     # step_up or retry: next round starts itself
+                    await self.start_practice(self.ladder.phrase, self.ladder.bpm_scale)
+                    return
         self.mode = "idle"
 
     def _per_finger(self, sc: Score) -> list[int]:
@@ -219,12 +238,16 @@ def create_app(cfg: Config) -> FastAPI:
                     f = FINGER_KEYS.get(m.get("key", ""))
                     if f is not None: await hub.on_strike(Strike(f, time.monotonic(), float(m.get("v", 0.8)), "key"))
                 elif t == "free":
+                    hub.ladder = None
                     hub.bpm = float(m.get("bpm", hub.bpm)); hub.cycle = int(m.get("cycle", hub.cycle)); hub.click_mode = m.get("click", hub.click_mode)
                     await hub.start_free()
                 elif t == "kit": hub.sampler.set_kit(m.get("kit", "chenda")); await hub.broadcast({"type": "kit", "kit": hub.sampler.kit})
-                elif t == "practice": await hub.start_practice(m.get("phrase"), float(m.get("speed", 1.0)))
-                elif t == "listen": await hub.start_listen(m.get("phrase"), float(m.get("speed", 1.0)))
-                elif t == "stop": await hub.stop_all(); hub.mode = "idle"
+                elif t == "practice": hub.ladder = None; await hub.start_practice(m.get("phrase"), float(m.get("speed", 1.0)))
+                elif t == "listen": hub.ladder = None; await hub.start_listen(m.get("phrase"), float(m.get("speed", 1.0)))
+                elif t == "ladder":                       # kaalam ladder: same phrase through a tempo sequence, auto-advancing
+                    scales = tuple(float(x) for x in m["scales"]) if m.get("scales") else DEFAULT_SCALES
+                    await hub.start_ladder(m.get("phrase"), scales)
+                elif t == "stop": hub.ladder = None; await hub.stop_all(); hub.mode = "idle"
                 elif t == "load_score": hub.score = score_from_dict(m.get("score", {}))
                 elif t == "game":                        # Repeat after Maveli: next round (level up on pass, same level on fail)
                     passed = bool(m.get("passed", True))
