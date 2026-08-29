@@ -80,7 +80,7 @@ def cycle_scores(events: list[tuple[float, int, float]], candidates=CYCLE_CANDID
     """How periodic is the onset pattern at each cycle length (beats)? Autocorrelation of the onset grid, 0..1."""
     if len(events) < 8:
         return {c: 0.0 for c in candidates}
-    n = int(max(b for b, _, _ in events) / GRID) + 1
+    n = int(round(max(b for b, _, _ in events) / GRID)) + 2
     grid = np.zeros(n)
     for b, _, s in events:
         grid[int(round(b / GRID))] = max(grid[int(round(b / GRID))], s)
@@ -147,7 +147,7 @@ def cluster_cycle_scores(events: list[tuple[float, int, float]], candidates=CYCL
     Unlike the plain onset grid this is not dominated by the beat pulse, so cycle lengths separate."""
     if len(events) < 8:
         return {c: 0.0 for c in candidates}
-    n = int(max(b for b, _, _ in events) / GRID) + 1
+    n = int(round(max(b for b, _, _ in events) / GRID)) + 2
     out = {c: 0.0 for c in candidates}; wsum = 0.0
     for k in {c for _, c, _ in events}:
         g = np.zeros(n)

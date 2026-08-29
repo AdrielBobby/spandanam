@@ -70,3 +70,9 @@ def test_cluster_periodicity_separates_true_cycle_and_pick_cycle():
     assert cs[8] > 0.8 and cs[8] > cs[4] + 0.3 and cs[8] > cs[6] + 0.3 and cs[16] > 0.5
     assert pick_cycle(cs) == 8                                  # shortest within tolerance = the true period
     assert pick_cycle({4: 0.9, 8: 0.2}) == 4 and pick_cycle({}) == 8 and pick_cycle({4: 0.5, 8: 0.9, 16: 0.85}) == 8
+
+
+def test_cycle_scores_handle_beats_that_round_up():
+    from viral.transcribe import cycle_scores, cluster_cycle_scores
+    ev = [(i * 0.5 + 0.13, i % 3, 0.9) for i in range(40)]      # 0.13 offsets are off-grid; last beat rounds up
+    assert set(cycle_scores(ev)) and set(cluster_cycle_scores(ev))
