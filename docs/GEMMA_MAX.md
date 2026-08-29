@@ -1,24 +1,24 @@
 # Maximising Gemma — practical notes
 
+## Where Gemma sits
+- `structure()` — once per uploaded track: bpm + 5 timbre clusters + quantised events (+ 6 s audio clip) → thaalam, cycle, finger map, syllables, phrases, kaalam. ~10–30 s on Pi 5 with e4b. Fill the wait with the "transcribing…" status and the pads lighting each cluster.
+- `coach()` — once per practice attempt: summary JSON → 30‑word Malayalam + English feedback and the next drill. ~5–10 s.
+- Never in the hit‑judging path. Judging is <1 ms math and stays that way.
+
 ## Model
-- **gemma3n:e4b** (Ollama) — audio + text in, ~8 GB RAM. Best quality. On Pi 5 8 GB expect 8–20 s per hearing — fine for a lesson loop, not for reflexes.
-- **gemma3n:e2b** — ~2× faster on the Pi. Same API. Pull both now.
-- Laptop hub is allowed by the rules; Pi 5 is the better *story*. Decide by 19:00 after timing one hearing on the Pi.
+`gemma3n:e4b` for quality (audio in). `gemma3n:e2b` if the Pi is slow. Pull both now. Laptop hub is allowed by the rules; Pi is the better story — time one `structure()` on the Pi by 19:00 and decide.
 
 ## Reliable JSON
-`"format": "json"` + schema in the system prompt + `temperature ≤ 0.3` + `validate_syllables()` on the way in (already wired). Clips ≤ 4 s, 16 kHz mono. Always tell Gemma what was ASKED — comparison beats free transcription.
+`format: json`, schema in the system prompt, temperature 0.2, and every field validated/clamped in `parse_structure()` with a deterministic fallback (`default_structure`). The app never breaks if Gemma is slow or wrong.
 
-## Better hearing, cheaply
-- Pass IMU strokes (count + timing) as hints so syllable count anchors to real hits.
-- Describe each syllable's timbre in the system prompt (tha = open right, ki = closed left…).
-- Add 2 few‑shot (asked, imu → played) examples after tonight's first real recordings.
+## Making structure() smarter cheaply
+- Clusters are ordered low→high timbre so "bass = thumb" is a sane default Gemma only has to override.
+- Send ≤ 240 events; for long tracks send the first 2 cycles and let Gemma extrapolate the cycle.
+- After tonight's first real tracks, add 2 few‑shot examples (input stats → good structure) to `STRUCT_SYS`.
+- Pass the audio clip: instrument identity (chenda vs tabla) is far more reliable from sound than from centroid numbers.
 
 ## Speech
-- TTS: `sudo apt install espeak-ng` (has `ml`). Piper voice if one is available offline. macOS dev: `say`.
-- STT: none — Gemma 3n hears the request directly (`intent()`). Talking point: one model is both ears and brain.
-
-## Latency budget per turn
-chant+tap 2–4 s → student 2–4 s → hear 5–15 s → speak 2 s → teach 3–6 s ≈ 25 s. Fill Gemma time with the Visible‑vaaythari screen animating so it never feels idle.
+`coach()` returns `say_ml`; pipe it through espeak‑ng (`-v ml`) or Piper for a spoken asan. Optional, 20 lines.
 
 ## Stage line
-"Timing is math; we don't pretend it's AI. Gemma does the four things no threshold can: hear which syllables you played, explain the weak one using the stick's motion, compose your next drill, and talk to you in Malayalam — on this Pi, offline."
+"Every hit is judged by math in under a millisecond — we don't dress that up as AI. Gemma does what math can't: it listens to a track and understands it as a thaalam, decides how it lives on five fingers, cuts it into lessons, and coaches you in Malayalam — on this Pi, offline. Gemini writes new music for it."

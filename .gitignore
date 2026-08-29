@@ -6,7 +6,9 @@ __pycache__/
 .pytest_cache/
 data/sessions/*
 !data/sessions/.gitkeep
-firmware/**/build/
+
 .DS_Store
-firmware/melam_node/config.h
-firmware/spandanam_band/config.h
+
+
+assets/tracks/*
+!assets/tracks/.gitkeep

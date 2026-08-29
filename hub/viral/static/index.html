@@ -1,0 +1,94 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Viralthaalam</title>
+<style>
+:root{--bg:#0a0a0a;--fg:#f2f2f2;--acc:#ffd60a;--mut:#666}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.4 "Space Grotesk",system-ui,sans-serif}
+header{display:flex;gap:16px;align-items:center;padding:12px 20px;border-bottom:1px solid #222}
+h1{font-size:22px;margin:0;letter-spacing:-.5px}h1 span{color:var(--acc)}
+.tabs button{background:#161616;color:var(--fg);border:1px solid #333;padding:8px 14px;border-radius:8px;cursor:pointer}
+.tabs button.on{background:var(--acc);color:#000;border-color:var(--acc)}
+main{display:grid;grid-template-columns:1fr 320px;gap:16px;padding:16px 20px}
+#lanes{position:relative;height:520px;background:#111;border:1px solid #222;border-radius:12px;overflow:hidden}
+.lane{position:absolute;top:0;bottom:0;width:20%;border-right:1px solid #1d1d1d}
+.hitline{position:absolute;left:0;right:0;bottom:70px;height:2px;background:#444}
+.note{position:absolute;width:16%;left:2%;height:18px;border-radius:6px;opacity:.95}
+.pad{position:absolute;bottom:0;left:0;right:0;height:64px;display:flex}
+.pad div{flex:1;margin:6px;border-radius:10px;background:#1a1a1a;border:2px solid #333;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;color:#aaa;transition:transform .05s}
+.pad div.hit{transform:scale(.94);filter:brightness(1.6)}
+.pad b{font-size:14px;color:#fff}.pad small{color:#777}
+#judge{position:absolute;top:14px;left:0;right:0;text-align:center;font-size:34px;font-weight:700;opacity:0;transition:opacity .15s}
+#stats{position:absolute;top:12px;right:14px;text-align:right;color:#bbb;font-size:13px}#stats b{color:var(--acc);font-size:20px}
+aside .card{background:#111;border:1px solid #222;border-radius:12px;padding:14px;margin-bottom:12px}
+label{display:block;color:#999;font-size:12px;margin-top:8px}input,select{width:100%;background:#0d0d0d;color:#fff;border:1px solid #333;border-radius:8px;padding:8px;margin-top:4px}
+button.primary{width:100%;margin-top:10px;background:var(--acc);color:#000;border:0;padding:10px;border-radius:8px;font-weight:700;cursor:pointer}
+button.ghost{width:100%;margin-top:6px;background:#1a1a1a;color:#fff;border:1px solid #333;padding:8px;border-radius:8px;cursor:pointer}
+#coach{white-space:pre-wrap;color:#ddd}.ml{font-size:17px;color:#fff}
+.hidden{display:none}#status{color:var(--mut);font-size:12px}
+.click{position:absolute;bottom:0;height:64px;width:20%;background:rgba(255,214,10,.15);pointer-events:none}
+</style></head><body>
+<header><h1>Viral<span>thaalam</span></h1>
+<div class="tabs"><button id="tFree" class="on">Free flow</button><button id="tLearn">Learn</button><button id="tPractice">Practice</button></div>
+<span id="status"></span><span style="margin-left:auto;color:#777;font-size:12px">keys: SPACE=thumb (or IMU) · J K L ; = index→pinky</span></header>
+<main>
+<section id="lanes">
+  <div id="judge"></div><div id="stats"><b id="pts">0</b> pts · streak <span id="streak">0</span></div>
+  <div class="hitline"></div><div class="pad" id="pad"></div>
+</section>
+<aside>
+  <div class="card" id="cFree"><h3>Free flow</h3>
+    <label>Instrument</label><select id="kit"></select>
+    <label>Tempo (bpm) <span id="bpmv">90</span></label><input id="bpm" type="range" min="40" max="200" value="90">
+    <label>Cycle beats</label><select id="cycle"><option>4</option><option>6</option><option>7</option><option selected>8</option><option>14</option></select>
+    <label>Tempo on fingers</label><select id="click"><option value="walk">walk thumb→pinky</option><option value="all">all fingers</option><option value="downbeat">downbeat only</option></select>
+    <button class="primary" id="goFree">Start tempo</button><button class="ghost" id="stop">Stop</button></div>
+  <div class="card hidden" id="cLearn"><h3>Learn a track</h3>
+    <label>Audio (mp3/wav)</label><input type="file" id="file" accept="audio/*"><button class="primary" id="upload">Analyze with Gemma</button>
+    <hr style="border-color:#222"><label>…or compose with Gemini</label><input id="brief" placeholder="playful Onam melam, builds to a kalasham">
+    <select id="ckit"></select><button class="ghost" id="compose">Compose</button>
+    <div id="scoreInfo" style="margin-top:10px;color:#bbb;font-size:13px"></div></div>
+  <div class="card hidden" id="cPractice"><h3>Practice</h3>
+    <label>Phrase</label><select id="phrase"><option value="">whole piece</option></select>
+    <label>Speed</label><select id="speed"><option value="0.6">60%</option><option value="0.8">80%</option><option value="1" selected>100%</option></select>
+    <button class="primary" id="goPractice">Play</button><button class="ghost" id="stop2">Stop</button>
+    <div id="summary" style="margin-top:10px;color:#bbb;font-size:13px"></div></div>
+  <div class="card"><h3>Asan says</h3><div id="coach" class="ml">—</div></div>
+</aside></main>
+<script>
+const COLORS=["#ff3b30","#ff9500","#ffd60a","#34c759","#0a84ff"],NAMES=["thumb","index","middle","ring","pinky"];
+const KEYS={" ":0,"j":1,"k":2,"l":3,";":4};
+let ws,state={},score=null,play=null,fmap={names:NAMES,syllables:["","","","",""]};
+const $=s=>document.querySelector(s);
+function pad(){$("#pad").innerHTML=NAMES.map((n,i)=>`<div id="p${i}" style="border-color:${COLORS[i]}"><b>${fmap.names[i]||n}</b><small>${fmap.syllables[i]||""}</small></div>`).join("");
+ for(let i=0;i<5;i++){const l=document.createElement("div");l.className="lane";l.style.left=(i*20)+"%";$("#lanes").prepend(l);}}
+function flash(i){const p=$("#p"+i);if(!p)return;p.classList.add("hit");setTimeout(()=>p.classList.remove("hit"),80);}
+function judge(t,c){const j=$("#judge");j.textContent=t;j.style.color=c;j.style.opacity=1;setTimeout(()=>j.style.opacity=0,300);}
+function connect(){ws=new WebSocket(`ws://${location.host}/ws`);ws.onmessage=e=>{const m=JSON.parse(e.data);
+ if(m.type==="strike"){flash(m.finger);if(m.judge){const map={perfect:["PERFECT","#34c759"],good:["GOOD","#ffd60a"],late:["LATE","#ff9500"],early:["EARLY","#ff9500"],wrong_finger:["WRONG FINGER","#ff3b30"],extra:["—","#666"]};judge(...map[m.judge]);$("#pts").textContent=m.points;$("#streak").textContent=m.streak;if(m.note!=null)markNote(m.note,m.judge);}}
+ else if(m.type==="click"){const c=document.createElement("div");c.className="click";c.style.left=(m.finger*20)+"%";c.style.background=m.down?"rgba(255,214,10,.35)":"rgba(255,255,255,.08)";$("#lanes").appendChild(c);setTimeout(()=>c.remove(),120);}
+ else if(m.type==="score"){setScore(m.score);$("#scoreInfo").textContent=`${m.score.title} · ${m.score.thaalam} · ${m.score.notes.length} notes · ${Math.round(m.score.bpm)} bpm — ${m.gemma||""}`;$("#tPractice").click();}
+ else if(m.type==="practice_start"){startPractice(m.score,m.lead_in_s);}
+ else if(m.type==="miss"){m.notes.forEach(i=>markNote(i,"miss"));$("#streak").textContent=0;judge("MISS","#ff3b30");}
+ else if(m.type==="practice_end"){play=null;const s=m.summary;$("#summary").innerHTML=`${"★".repeat(s.stars)}${"☆".repeat(3-s.stars)} &nbsp; ${Math.round(s.accuracy*100)}% · ${s.points} pts<br>perfect ${s.perfect} · good ${s.good} · miss ${s.misses} · wrong finger ${s.wrong_finger}`;}
+ else if(m.type==="coach"){$("#coach").innerHTML=`<div class="ml">${m.say_ml||""}</div><div style="color:#999;margin-top:6px">${m.say_en||""}</div>${m.drill_phrase!=null?`<div style="color:#777;font-size:12px;margin-top:6px">drill: phrase ${m.drill_phrase+1} @ ${Math.round(m.drill_bpm||0)} bpm</div>`:""}`;}
+ else if(m.type==="status"){$("#status").textContent=m.text;}
+ else if(m.type==="kit"){$("#status").textContent="kit: "+m.kit;}};ws.onclose=()=>setTimeout(connect,800);}
+document.addEventListener("keydown",e=>{if(e.repeat)return;const k=e.key.toLowerCase();if(k in KEYS||e.key===" "){e.preventDefault();ws.send(JSON.stringify({type:"key",key:e.key===" "?" ":k,v:.9}));}});
+// falling notes
+let notesEl=[];function setScore(s){score=s;fmap=s.finger_map;pad();const ph=$("#phrase");ph.innerHTML='<option value="">whole piece</option>'+(s.phrases||[]).map((p,i)=>`<option value="${i}">phrase ${i+1} (beats ${p[0]}–${p[1]})</option>`).join("");}
+function startPractice(s,lead){score=s;fmap=s.finger_map;pad();$("#pts").textContent=0;$("#streak").textContent=0;notesEl.forEach(n=>n.remove());notesEl=[];
+ const t0=performance.now()+lead*1000,beat=60000/s.bpm;play={t0,beat};
+ s.notes.forEach((n,i)=>{const el=document.createElement("div");el.className="note";el.style.left=(n.finger*20+2)+"%";el.style.background=COLORS[n.finger];el.dataset.t=t0+n.beat*beat;el.textContent="";el.title=n.label;$("#lanes").appendChild(el);notesEl.push(el);});requestAnimationFrame(anim);}
+function markNote(i,v){const el=notesEl[i];if(!el)return;el.style.opacity=.25;if(v==="miss"||v==="wrong_finger")el.style.background="#333";}
+function anim(){if(!play)return;const now=performance.now(),H=$("#lanes").clientHeight-70,speed=H/2000;
+ notesEl.forEach(el=>{const dt=+el.dataset.t-now;const y=H-dt*speed;el.style.top=(y-9)+"px";el.style.display=(y<-20||y>H+40)?"none":"block";});requestAnimationFrame(anim);}
+// controls
+fetch("/api/state").then(r=>r.json()).then(s=>{state=s;for(const id of["kit","ckit"]){$("#"+id).innerHTML=Object.entries(s.kits).map(([k,v])=>`<option value="${k}" ${k===s.kit?"selected":""}>${v.name}</option>`).join("");}if(s.score)setScore(s.score);if(s.dry)$("#status").textContent="dry mode (no GPIO)";});
+$("#bpm").oninput=e=>$("#bpmv").textContent=e.target.value;
+$("#kit").onchange=e=>ws.send(JSON.stringify({type:"kit",kit:e.target.value}));
+$("#goFree").onclick=()=>ws.send(JSON.stringify({type:"free",bpm:+$("#bpm").value,cycle:+$("#cycle").value,click:$("#click").value}));
+$("#stop").onclick=$("#stop2").onclick=()=>{ws.send(JSON.stringify({type:"stop"}));play=null;};
+$("#upload").onclick=async()=>{const f=$("#file").files[0];if(!f)return;const fd=new FormData();fd.append("file",f);$("#status").textContent="uploading…";const r=await fetch("/api/learn",{method:"POST",body:fd});const j=await r.json();$("#status").textContent=j.ok?`learned ${j.notes} notes · ${j.thaalam}`:"error: "+j.error;};
+$("#compose").onclick=async()=>{$("#status").textContent="Gemini composing…";const r=await fetch("/api/compose",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({brief:$("#brief").value,kit:$("#ckit").value,cycles:4,bpm:+$("#bpm").value})});const j=await r.json();$("#status").textContent=j.ok?`composed ${j.notes} notes`:"error: "+j.error;};
+$("#goPractice").onclick=()=>ws.send(JSON.stringify({type:"practice",phrase:$("#phrase").value===""?null:+$("#phrase").value,speed:+$("#speed").value}));
+for(const [t,c] of [["tFree","cFree"],["tLearn","cLearn"],["tPractice","cPractice"]]){$("#"+t).onclick=()=>{document.querySelectorAll(".tabs button").forEach(b=>b.classList.remove("on"));$("#"+t).classList.add("on");["cFree","cLearn","cPractice"].forEach(x=>$("#"+x).classList.toggle("hidden",x!==c));};}
+pad();connect();
+</script></body></html>

@@ -1,6 +1,6 @@
 # Contributing
 
-Hackathon mode: small commits, push often, `main` is always demo‑able. Project: Vaaythari (offline Gemma chenda asan).
+Hackathon mode: small commits, push often, `main` is always demo‑able. Project: Viralthaalam (air-percussion glove, Gemma finger thaalam).
 
 ## Branches
 - `main` — always runs. Merge via PR or fast‑forward after a quick check.
@@ -13,7 +13,7 @@ Hackathon mode: small commits, push often, `main` is always demo‑able. Project
 ```bash
 cd hub && pytest -q
 ```
-Firmware changes: build for XIAO_ESP32S3 and confirm buzzers tap and the IMU reports strokes on the Pi.
+Firmware changes: build for XIAO_ESP32S3 and confirm buzzers+LEDs cue and the IMU triggers a sound on the Pi.
 
 ## Style
 - Python: pure functions, frozen dataclasses, no in‑place mutation of shared state, files < 300 lines.
