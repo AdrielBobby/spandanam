@@ -150,9 +150,11 @@ class Hub:
         await self.start_practice(phrase, self.ladder.bpm_scale)
 
     async def _practice_loop(self, sc: Score) -> None:
+        if self.play is None: return          # stop_all() raced us before our first turn on the event loop
         cued: set[int] = set()
         end = self.play.start_s + sc.length_beats * sc.beat_s + 0.3
         for b in range(4):                                               # count-in on thumb
+            if self.play is None: return       # stop_all() landed mid-count-in
             await asyncio.sleep(max(0, self.play.start_s - (4 - b) * sc.beat_s - time.monotonic())); self.glove.cue(0, 40, led=True)
         while self.mode == "practice" and self.play and time.monotonic() < end:
             now = time.monotonic()
