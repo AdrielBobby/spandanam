@@ -67,7 +67,8 @@ cd hub && pytest
 - Ryyan Safar — [@ryyansafar](https://github.com/ryyansafar) — AI/ML
 - Adriel Bobby — [@AdrielBobby](https://github.com/AdrielBobby) — backend
 - Fathima Moonam Kandathil — [@fathima-004](https://github.com/fathima-004) — hardware
-- Paulyn — UI
+- Paulyn — [@paulyn](https://github.com/paulyn) — UI
+- Jake O Jeff — [@JakeOJeff](https://github.com/JakeOJeff)
 
 ## Socials & Support
 - Portfolio: https://ryyansafar.site
