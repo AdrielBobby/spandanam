@@ -68,14 +68,20 @@ class Mixer:
             return
         self._last_check = now
         try:
-            self.sd._terminate(); self.sd._initialize()             # PortAudio caches the device list; refresh it
-            name = str(self.sd.query_devices(kind="output")["name"])
+            name = str(self.sd.query_devices(kind="output")["name"])   # NOTE: never re-init PortAudio here — it kills the live stream
         except Exception:
             return
-        if name != self.device_name:
-            log.info("default output changed: %s -> %s", self.device_name, name)
-            with self._lock: self._voices = []
-            self._open()
+        if name != self.device_name or not self.stream.active:
+            log.info("output changed or stream dead: %s -> %s", self.device_name, name)
+            self.reopen()
+
+    def reopen(self) -> None:
+        """Rebind to the current default output (call after plugging in headphones/speaker)."""
+        with self._lock: self._voices = []
+        try:
+            self.sd._terminate(); self.sd._initialize()             # safe here: we are about to open a fresh stream
+        except Exception: pass
+        self._open()
 
     def _cb(self, out, frames, _time, _status):
         mix = np.zeros(frames, dtype=np.float32)

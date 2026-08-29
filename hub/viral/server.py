@@ -208,6 +208,17 @@ def create_app(cfg: Config) -> FastAPI:
                 "audio_device": getattr(hub.sampler.mixer, "device_name", None),
                 "score": json.loads(hub.score.to_json()) if hub.score else None, "dry": cfg.dry}
 
+    @app.post("/api/audio/reopen")
+    async def audio_reopen():
+        """Rebind audio to the current default output device (after plugging in headphones / the stage speaker)."""
+        try:
+            hub.sampler.mixer.reopen(); name = hub.sampler.mixer.device_name
+        except Exception as e:
+            return JSONResponse({"ok": False, "error": str(e)}, 500)
+        hub.sampler.play(0, 0.6)                                     # audible confirmation
+        await hub.broadcast({"type": "status", "text": f"audio → {name}"})
+        return {"ok": True, "audio_device": name}
+
     @app.post("/api/learn")
     async def learn(file: UploadFile = File(...)):
         TRACKS.mkdir(parents=True, exist_ok=True); p = TRACKS / file.filename
