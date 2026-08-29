@@ -9,3 +9,4 @@ data/sessions/*
 firmware/**/build/
 .DS_Store
 firmware/melam_node/config.h
+firmware/spandanam_band/config.h

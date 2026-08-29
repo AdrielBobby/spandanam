@@ -1,63 +1,63 @@
-# Melam Asan 🥁
+# Spandanam 🥁✋
 
-**An on‑device Gemma "lead drummer" for chenda melam — keeps a troupe in sync, tracks the kaalam, and buzzes a tiring drummer to rest before they collapse.**
+**Feel the chenda melam.** A haptic wearable that lets deaf and hard‑of‑hearing people experience Kerala's loudest art form — with **Gemma 3n running on‑device** as the ears that decide *how* the music should be felt.
 
-Built in 24 h at the [Google Physical AI Hackathon: Onam Edition](https://physicalai.tinkerhub.org/), TinkerSpace Kochi, 29–30 Aug 2026 · Theme: **Onakalikal / Homecoming (care)** · Powered by Gemma + Gemini.
+Built in 24 h at the [Google Physical AI Hackathon: Onam Edition](https://physicalai.tinkerhub.org/), TinkerSpace Kochi, 29–30 Aug 2026 · Themes: **Homecoming (care & accessibility) · Onakalikal** · Powered by Gemma + Gemini.
 
 ## The problem
-Chenda melam ensembles (Panchari, Pandi) play for hours in Kerala heat during Onam and temple festivals. Beginners drift out of sync with the *asan* (lead), kaalam (tempo‑stage) transitions are missed, and heat exhaustion among drummers is common but unmonitored.
+Onam without melam is unthinkable — yet Kerala's 2–3 lakh deaf and hard‑of‑hearing people stand in the crowd and feel only a blur. Existing "music vests" map loudness to buzz; a melam through that is noise.
 
-## What it does — Sense → Think → Act
+## Sense → Think → Act
 | | |
 |---|---|
-| **Sense** | Each drummer wears a wrist puck: XIAO ESP32‑S3 + IMU on the stick + heart‑rate sensor. 100 Hz telemetry over local Wi‑Fi. A mic on the hub hears the ensemble. |
-| **Think** | DSP finds every strike, tempo and phase error. **Gemma 3n runs fully offline on the hub** and does what DSP can't: recognises which *kaalam* the troupe is in, who broke the pattern, and grades each drummer's fatigue (HR slope × amplitude decay × timing jitter) with a one‑line reason for the asan. |
-| **Act** | Vibration motor on the wrist: 1 pulse = speed up, 2 = slow down, 3 = kaalam change, long buzz = *rest now*. Live asan console on screen. |
+| **Sense** | A microphone on the hub hears the live ensemble. |
+| **Think — reflex** | DSP splits the sound into bass / treble / horn / cymbal energy at 100 Hz and fires vibrations within 20 ms. |
+| **Think — judgement** | **Gemma 3n, offline, every 2 s, listens to the clip** and decides: which instruments are actually playing (valanthala, idanthala, elathalam, kombu, kuzhal), which *kaalam* we're in, whether a kombu solo or the *kalasham* climax is starting — then writes the **haptic score**: which body sites each instrument goes to, how strong, what motif marks an event, and a caption in English + Malayalam. It also honours the wearer's preferences in plain language ("softer chest, more cymbals"). |
+| **Act** | 8 vibration motors — chest, back, both wrists, both shoulders, both fingertips — driven by PWM on a XIAO ESP32‑S3. OLED shows the captions; an LED strip mirrors the body map for sighted people. |
 
-After the session, the **Gemini API** turns the telemetry + video into a coaching report per drummer.
+After the performance, the **Gemini API** turns the session log into a report on how the piece was felt and how to improve the mapping.
 
-**Hardware removal test:** unplug the IMUs and the system has nothing to hear, reason about, or command. ✔
+**Removal tests:** no wearable → nothing to feel. No Gemma → a loudness vest. Both fail, as they should.
 
-## Why Gemma on‑device (not just an API call)
-- Works at a temple ground with **zero connectivity**.
-- Drummer **biometrics never leave the device**.
-- Gemma 3n's native **audio input** lets it judge the musical state from sound + sensors together — a job neither a threshold nor a cloud round‑trip can do at 2 s cadence.
+## Why Gemma *on‑device*
+- Temple grounds and festival crowds have no reliable connectivity.
+- Latency: 2 s musical re‑planning next to a 10 ms reflex loop needs the model beside the DSP.
+- Gemma 3n hears audio natively, so instrument identity, kaalam and climax — musical concepts a spectrum can't express — are decided locally, continuously, for free.
 
-## Repo layout
+## Repo
 ```
-firmware/melam_node/   XIAO ESP32-S3 node (IMU + PPG + vibra motor, UDP)
-hub/melam/             Python hub: ingest, strike, sync, fatigue, gemma_coach, haptics, console, gemini_report
-hub/melam/simulate.py  fake drummers for dev without hardware
-tests/                 unit tests (pytest)
-docs/                  BOM, ARCHITECTURE, PLAN_24H
+firmware/spandanam_band/   XIAO ESP32-S3: 8-channel PWM haptic band, UDP frames
+hub/spandanam/             audio · dsp (reflex) · gemma_ear (judgement) · haptic (frame composer) · console · gemini_report
+hub/spandanam/fake_band.py dev stand-in for the wearable
+tests/                     pytest
+docs/                      BOM · ARCHITECTURE · PLAN_24H
 ```
 
 ## Quick start
 ```bash
-# hub (laptop or Raspberry Pi 5)
-brew install ollama   # or: curl -fsSL https://ollama.com/install.sh | sh
-ollama pull gemma3n:e4b            # fallback: gemma3:4b
-cd hub && pip install -e ".[dev]" && cd ..
-python -m melam.main --audio       # add -v for debug; run from hub/
+brew install ollama            # or curl -fsSL https://ollama.com/install.sh | sh
+ollama pull gemma3n:e4b        # fallback: gemma3n:e2b
+cd hub && pip install -e ".[dev]" soundfile
 
-# no hardware yet? in another shell:
-python -m melam.simulate --bpm 80
+python -m spandanam.fake_band                     # terminal 1: pretend wearable
+python -m spandanam.main --band 127.0.0.1 --wav ../assets/panchari.wav   # terminal 2: from a recording
+python -m spandanam.main --prefs "softer chest, more cymbals"            # live mic, real band
 
-# post-session report (needs GEMINI_API_KEY from Google AI Studio)
-python -c "from melam.gemini_report import *; from pathlib import Path; \
-  print(generate_report(Path('data/sessions/<id>/session.json'), None, 'gemini-2.5-flash'))"
+# post-session report
+GEMINI_API_KEY=... python -c "from spandanam.gemini_report import *; from pathlib import Path; \
+  print(generate_report(Path('data/sessions/<id>/session.json'), 'gemini-2.5-flash'))"
 ```
-Firmware: see [`firmware/melam_node/README.md`](firmware/melam_node/README.md). Components: [`docs/BOM.md`](docs/BOM.md).
+Wearable build: [`firmware/spandanam_band/README.md`](firmware/spandanam_band/README.md) · Parts: [`docs/BOM.md`](docs/BOM.md).
 
 ## Tests
 ```bash
-cd hub && pytest --cov=melam
+cd hub && pytest
 ```
 
 ## Team
 - Ryyan Safar — [@ryyansafar](https://github.com/ryyansafar)
 - Adriel Bobby — [@AdrielBobby](https://github.com/AdrielBobby)
-- Fathima — [@fathima-004](https://github.com/fathima-004)
+- Fathima Moonam Kandathil — [@fathima-004](https://github.com/fathima-004)
 
 ## Socials & Support
 - Portfolio: https://ryyansafar.site

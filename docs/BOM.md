@@ -1,48 +1,41 @@
-# Bill of Materials — Melam Asan
+# Bill of Materials — Spandanam
 
-Target: **3 drummer nodes + 1 hub**. Everything marked ✅ is in the TinkerSpace shared inventory (XIAO, Grove, sensors, motors); ⚠️ is bring‑your‑own or buy locally (Kalamassery/Ernakulam electronics shops, or Robu/Amazon if pre‑ordered).
+One wearable (band + 2 wrist cuffs) + one hub. ✅ = TinkerSpace shared inventory · ⚠️ = buy/bring.
 
-## Per node (×3, ideally ×4 incl. asan)
-| Qty | Part | Role | Source | ≈₹ |
+## Wearable
+| Qty | Part | Role | Src | ≈₹ |
 |---|---|---|---|---|
-| 1 | Seeed **XIAO ESP32‑S3** (Sense variant OK) | MCU + Wi‑Fi | ✅ | 900 |
-| 1 | **MPU6050** (or Grove IMU 6/9‑DoF) | Stick/wrist IMU — strike detection, ±16 g | ✅ | 150 |
-| 1 | **MAX30102** PPG (heart rate) | Wrist HR for fatigue | ⚠️ | 250 |
-| 1 | **Coin vibration motor** 3 V (10 mm) | Haptic cue | ⚠️ (or from inventory motors) | 60 |
-| 1 | 2N2222 / S8050 NPN + 1 kΩ + 1N4148 diode | Motor driver | ✅ lab | 15 |
-| 1 | 3.7 V LiPo 400–1000 mAh + JST | Power | ⚠️ | 250 |
-| 1 | Slide switch | Power | ✅ | 10 |
-| 1 | Velcro wrist strap + zip ties | Mounting | ⚠️ | 50 |
-| – | Dupont wires, heat‑shrink, hot glue | | ✅ | – |
-| 1 | Laser‑cut/3D‑printed wrist puck + stick clip | Enclosure | ✅ TinkerSpace | – |
+| 1 | Seeed **XIAO ESP32‑S3** | drives 8 PWM motor channels over Wi‑Fi | ✅ | 900 |
+| 8 | **Coin vibration motors** 10 mm 3 V (LRA if available — crisper) | chest, back, 2 wrists, 2 shoulders, 2 fingertips | ⚠️ (inventory motors as fallback) | 8×60 |
+| 1–2 | **ULN2003** Darlington array (7 ch) + 1 NPN, **or** 2× TB6612FNG / L293D | motor driver, PWM intensity | ✅ lab | 80 |
+| 8 | 1N4148 flyback diodes, 8× 100 nF caps | motor noise | ✅ | 30 |
+| 1 | 3.7 V LiPo 1000–2000 mAh + JST + slide switch | power (8 motors ≈ 0.6 A peak) | ⚠️ | 350 |
+| 1 | TP4056 charger board | recharge | ⚠️ | 40 |
+| 1 | 0.96" **OLED** (I2C SSD1306) or phone screen | Gemma captions (EN/ML) | ✅ | 150 |
+| 1 | WS2812 LED strip (8 px) | shows sighted judges what the wearer feels | ✅ | 100 |
+| 1 | Wide elastic chest band (≈1 m × 8 cm) + 2 wrist cuffs + 2 finger rings (velcro) | garment | ⚠️ tailor/sports shop | 300 |
+| – | 2‑core flexible wire, heat‑shrink, hot glue, sewing kit, zip ties | | ✅ | – |
+| – | 3D‑printed motor pucks ×8, laser‑cut controller case | | ✅ TinkerSpace | – |
 
-**Node subtotal ≈ ₹1,700 · ×3 ≈ ₹5,100**
+**Wearable total ≈ ₹2,500**
 
-## Hub (×1)
+## Hub
 | Part | Role | Note |
 |---|---|---|
-| Laptop (Apple Silicon / any with ≥8 GB) **or** Raspberry Pi 5 (8 GB) | Runs Ollama + **Gemma 3n E4B** (or `gemma3:4b`) fully offline | Pi 5 gives the "true edge" story; laptop is the safe fallback |
-| Phone hotspot or laptop hotspot / travel router | Wi‑Fi for nodes | Name it `melam-hub`, no internet needed |
-| USB mic (any) | 2 s ensemble audio clips for Gemma 3n | Optional but the standout feature |
-| USB‑C cable, powered USB hub | Flashing / power | |
+| Laptop (M‑series Mac ideal) or Raspberry Pi 5 8 GB | Ollama + **Gemma 3n E4B** (audio in) fully offline | Pi 5 = true edge; laptop = safe |
+| **USB microphone** (or laptop mic for dev) | hears the melam | directional if possible |
+| Phone / laptop hotspot named `spandanam-hub` | Wi‑Fi to wearable | no internet needed |
+| Bluetooth/USB speaker | play melam recordings for the demo | |
 
 ## Demo props
-| Part | Note |
-|---|---|
-| Chenda (borrow) **or** 2–3 drums / cardboard boxes | Anything struck with a stick works |
-| Drum sticks ×3 (chenda kol or wooden dowels) | IMU clips onto these |
-| Blindfold — no. Onam props: kasavu cloth for the console table | Presentation |
+- A chenda (borrow) or drums for a live melam; else curated melam recordings (Panchari full cycle, ~4 min) on the laptop.
+- Earplugs + blindfold for judges to try it "deaf".
 
-## Buy‑now list (things TinkerSpace probably won't have)
-- 3× MAX30102 modules
-- 3× coin vibration motors
-- 3× LiPo 3.7 V + JST connectors
-- Velcro straps
-- USB mic (if none in laptop)
+## Buy‑now list
+8× coin/LRA vibration motors · LiPo 1000+ mAh + JST · TP4056 · elastic band + velcro · USB mic (if none) · ULN2003 if not in inventory.
 
 ## Software
-- Ollama ≥0.6 with `ollama pull gemma3n:e4b` (≈7.5 GB) — pull **now**, before venue Wi‑Fi dies
-- Fallback: `ollama pull gemma3:4b`
-- Arduino IDE 2 + ESP32 board package + libs in `firmware/melam_node/README.md`
-- Python 3.10+, `pip install -e hub[dev]`
-- `GEMINI_API_KEY` from Google AI Studio (post‑session report only)
+- `ollama pull gemma3n:e4b` (≈7.5 GB — start immediately). Fallback `gemma3n:e2b`.
+- Python 3.10+: `pip install -e "hub[dev]"`; `pip install soundfile` for `--wav` playback.
+- Arduino IDE 2 + ESP32 core (no extra libs needed for the band).
+- `GEMINI_API_KEY` from Google AI Studio for the post‑session report.

@@ -1,7 +1,0 @@
-// Copy to config.h and fill in. config.h is git-ignored.
-#define NODE_ID   "drummer-1"      // drummer-1 .. drummer-4, or "asan"
-#define WIFI_SSID "melam-hub"      // laptop/Pi hotspot
-#define WIFI_PASS "changeme"
-#define HUB_IP    "192.168.4.1"
-#define HUB_PORT  9000
-#define NODE_PORT 9001

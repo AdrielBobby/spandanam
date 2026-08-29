@@ -1,6 +1,6 @@
 # Contributing
 
-Hackathon mode: small commits, push often, `main` is always demo‑able.
+Hackathon mode: small commits, push often, `main` is always demo‑able. Project: Spandanam (haptic melam for deaf listeners).
 
 ## Branches
 - `main` — always runs. Merge via PR or fast‑forward after a quick check.
@@ -13,11 +13,11 @@ Hackathon mode: small commits, push often, `main` is always demo‑able.
 ```bash
 cd hub && pytest -q
 ```
-Firmware changes: build for XIAO_ESP32S3 and confirm a node connects + buzzes on boot.
+Firmware changes: build for XIAO_ESP32S3 and confirm the band does its hello pulse.
 
 ## Style
 - Python: pure functions, frozen dataclasses, no in‑place mutation of shared state, files < 300 lines.
-- Firmware: no blocking `delay()` in the sample loop except haptic pulses.
+- Firmware: the frame loop never blocks; motors must cut out on frame timeout.
 - Never commit `config.h`, `.env`, or session data.
 
 ## Socials & Support
