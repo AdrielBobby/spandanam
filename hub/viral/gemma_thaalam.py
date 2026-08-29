@@ -174,10 +174,13 @@ async def _chat(client: httpx.AsyncClient, url: str, model: str, system: str, us
 
 async def structure(client, url, model, bpm: float, profile: dict, events: list[tuple[float, int, float]],
                     wav: bytes | None, fallback: Structure) -> Structure:
-    user = (json.dumps({"digest": digest(bpm, profile, events), "fingers": FINGERS}) +
-            '\nFill exactly this JSON (no events, no extra keys): {"title":"","thaalam":"","beats_per_cycle":8,"kit":"chenda","kaalam":1,'
+    dg = digest(bpm, profile, events)
+    guess = int(dg["best_cycle_guess"])
+    user = (json.dumps({"digest": dg, "fingers": FINGERS}) +
+            f'\nFill exactly this JSON (no events, no extra keys). beats_per_cycle defaults to the evidence-based guess {guess} unless you '
+            f'have a musical reason: {{"title":"","thaalam":"","beats_per_cycle":{guess},"kit":"chenda","kaalam":1,'
             '"finger_map":{"cluster_to_finger":{"0":0,"1":1,"2":2,"3":3,"4":4},"names":["","","","",""],"syllables":["","","","",""]},'
-            '"phrases":[[0,8]],"notes_en":"","evidence":"","confidence":0.5}')
+            f'"phrases":[[0,{guess}]],"notes_en":"","evidence":"","confidence":0.5}}')
     c = await _chat(client, url, model, STRUCT_SYS, user, wav, 450)
     try:
         return parse_structure(c, fallback) if c else fallback
