@@ -28,6 +28,6 @@ class Config:
     # Point the Pi at a laptop running Ollama with: OLLAMA_URL=http://<laptop-ip>:11434  (rules allow laptop or edge)
     ollama_url: str = field(default_factory=lambda: os.environ.get("OLLAMA_URL", "http://127.0.0.1:11434"))
     gemma_model: str = field(default_factory=lambda: os.environ.get("GEMMA_MODEL", "gemma3n:e4b"))
-    gemini_model: str = "gemini-2.5-flash"
+    gemini_model: str = field(default_factory=lambda: os.environ.get("GEMINI_MODEL", "gemini-3.6-flash"))
     imu_strike_g: float = 2.5
     dry: bool = False
