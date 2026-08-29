@@ -71,7 +71,8 @@ Never copy sample text; every value must come from THIS digest. Names must be th
 (chenda: valanthala, idanthala-open, idanthala-closed, rim, elathalam; mridangam: thom, nam, dhin, chapu, arai; tabla: ge, na, tin, te, ke).
 Rules: cluster 0 is the lowest timbre. Never output a finger index outside 0-4. Keep every key exactly as spelled above.
 Thaalam hints: panchari = 6 beats (pathikaalam very slow, later kaalams double); pandi = 7 (often felt as 14); chempada/adi = 8;
-ekam = 4; thriputa = 7; roopakam = 3/6. Use cycle_periodicity + beat_histogram as evidence; if unclear prefer best_cycle_guess.
+ekam = 4; thriputa = 7; roopakam = 3/6. Use cycle_periodicity (also by half/double tempo) + beat_histogram as evidence; if evidence_strength is weak or very weak, say so in
+"evidence", keep confidence <= 0.5 and prefer best_cycle_guess. Do not claim certainty the numbers don't support.
 DO NOT list or echo the events. Output ONLY the small JSON object described — nothing else."""
 
 COACH_SYS = """You are a warm, precise percussion teacher (a Kerala asan). You receive DETERMINISTIC FACTS about one attempt —

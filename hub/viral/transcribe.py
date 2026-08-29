@@ -102,16 +102,28 @@ def beat_histogram(events: list[tuple[float, int, float]], cycle: int) -> dict[i
     return hist
 
 
+def cycle_table(events: list[tuple[float, int, float]]) -> dict[str, dict[int, float]]:
+    """Periodicity at half, original and double tempo — melam tempo estimates are often off by 2×."""
+    out = {}
+    for label, k in (("half_tempo", 0.5), ("tempo", 1.0), ("double_tempo", 2.0)):
+        scaled = [(b * k, c, s) for b, c, s in events]
+        out[label] = cycle_scores(scaled, (6, 7, 8, 12, 14, 16))
+    return out
+
+
 def digest(bpm: float, profile: dict, events: list[tuple[float, int, float]], head: int = 32) -> dict:
     """What Gemma actually reads: small, structured, evidence-rich."""
-    cs = cycle_scores(events)
-    best = max(cs, key=cs.get) if cs else 8
+    cs = cycle_scores(events, (6, 7, 8, 12, 14, 16))
+    mx = max(cs.values()) if cs else 0.0
+    best = max((k for k, v in cs.items() if v >= 0.85 * mx), default=8) if mx > 0 else 8
     return {
         "bpm": round(bpm, 1),
         "n_events": len(events),
         "clusters": {str(k): v for k, v in profile.items()},
         "cycle_periodicity": {str(k): v for k, v in cs.items()},
+        "cycle_periodicity_by_tempo": {lab: {str(k): v for k, v in tbl.items()} for lab, tbl in cycle_table(events).items()},
         "best_cycle_guess": best,
+        "evidence_strength": "strong" if mx > 0.4 else "weak" if mx > 0.15 else "very weak",
         "beat_histogram_at_best_cycle": {str(k): v for k, v in beat_histogram(events, best).items()},
         "opening_pattern": " ".join(f"{b:g}:{c}" for b, c, _ in events[:head]),
     }

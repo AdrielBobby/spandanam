@@ -58,4 +58,4 @@ def test_cycle_scores_prefer_true_period_and_digest_is_small():
     cs = cycle_scores(ev)
     assert cs[8] >= cs[6] and cs[8] >= cs[7] and cs[8] > 0.5
     d = digest(96, {0: {"count": 12}}, ev)
-    assert d["best_cycle_guess"] in (8, 16, 4) and len(json.dumps(d)) < 1500 and d["n_events"] == 72
+    assert d["best_cycle_guess"] in (8, 16) and d["evidence_strength"] == "strong" and len(json.dumps(d)) < 2500 and d["n_events"] == 72
