@@ -1,23 +1,23 @@
-# 24 h plan — Spandanam
+# 24 h plan — Vaaythari
 
 | Time | Milestone |
 |---|---|
-| 14:30–15:30 | Pull gemma3n:e4b. Collect XIAO, ULN2003, OLED, LED strip; buy 8 motors, LiPo, elastic band. |
-| 15:30–17:30 | Hub: `python -m spandanam.main --wav melam.wav` + `python -m spandanam.fake_band` → bars move to the music. Gemma returns valid JSON with captions. |
-| 17:30–19:00 | Band: XIAO + ULN2003 + 4 motors on breadboard, receiving frames. |
-| **19:00 CP1** | Feel the bass on one motor from a recording. |
-| 19:00–23:30 | All 8 motors, sewn into band + cuffs. Gemma body_map/gains actually change routing. Onset kick tuned. |
-| **23:30 CP2** | Wear it, eyes closed, earplugs: can you tell chenda from cymbals from kombu? Fix mapping until yes. |
-| 00:30–03:00 | Event motifs (kaalam change / kalasham). OLED captions EN/ML. LED strip mirror. Preferences via `--prefs`. |
-| 03:00–06:00 | Live mic with a real drum. Latency check. Battery test. 3D‑print motor pucks. Sleep in shifts. |
-| 06:00–08:00 | Gemini report end‑to‑end. |
-| **08:00 CP3** | Full 3‑min demo run‑through. |
-| 09:00–12:00 | README, BOM final, video (judge wearing band, screen showing body map + captions, then Wi‑Fi off). |
-| 12:30 / **13:30** | Final checkpoint / submit. |
+| 15:30–16:30 | Pi: Ollama + gemma3n pulls, espeak‑ng, I2C on. Buy mic/speaker/motors. |
+| 16:30–18:30 | `python -m asan.main --dry --lang en` on laptop: chant → record → Gemma hears → next lesson. Time one hearing on the Pi. |
+| **19:00 CP1** | Full loop on Pi: buzzers tap, IMU strokes counted, Gemma corrects. |
+| 19:00–23:30 | Wrist strap + stick IMU mount. Prompt tuning on a real drum (few‑shot). `--voice` Malayalam intents. Visible vaaythari screen. |
+| **23:30 CP2** | 3‑min lesson demo end‑to‑end with a teammate who's never played. |
+| 00:30–03:00 | Onakalikal game (#10), posture coach (#8), guru persona (#7). Midnight crowd test. |
+| 03:00–06:00 | Robustness, thermal, battery. Kaalam ladder LEDs if time. Sleep in shifts. |
+| 06:00–08:00 | Gemini notebook report. |
+| **08:00 CP3** | Dress rehearsal, timed. |
+| 09:00–12:00 | README/docs final, 90 s video, repo tidy. |
+| **13:30** | Submit. |
 
 ## Demo script (3 min)
-1. "Melam is the sound of Onam. 2–3 lakh Malayalis have never heard it." Hand the judge the band + earplugs.
-2. Play Panchari from pathikaalam. Screen shows body map: bass on chest, cymbals on fingers. Judge nods on the beat.
-3. Kombu enters → shoulders hum, caption "കൊമ്പ് — horns join". Kaalam doubles → 3‑pulse wrists.
-4. Judge says "softer chest, more cymbals" → `--prefs` → Gemma re‑maps live.
-5. Kalasham → everything rises, back motif. Pull Wi‑Fi: still running. Show Gemini report on phone.
+1. "Chenda has been taught for 500 years by voice — vaaythari. Our asan does it the same way, on a Pi, offline." Adriel at the chenda, wrist strap on, IMU on the stick.
+2. Asan chants *dhim‑tha‑ka*, buzzers tap R‑L; Adriel plays; screen shows heard vs asked; asan corrects in Malayalam.
+3. Fathima: "Asan, pathukke" → tempo drops. "Thakadhimi padippikku" → new phrase.
+4. Adriel drops his wrist on purpose → asan blames wrist angle (IMU). Sound + motion fused.
+5. Game mode: a judge repeats phrases until they fail; Gemma escalates, teases kindly.
+6. Pull Wi‑Fi — nothing changes. Show the Gemini notebook on a phone.

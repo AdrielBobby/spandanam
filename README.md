@@ -1,55 +1,53 @@
-# Spandanam 🥁✋
+# Vaaythari 🥁🗣️
 
-**Feel the chenda melam.** A haptic wearable that lets deaf and hard‑of‑hearing people experience Kerala's loudest art form — with **Gemma 3n running on‑device** as the ears that decide *how* the music should be felt.
+**An offline Gemma chenda asan.** It chants a vaaythari phrase, taps it on your wrist, listens to you play it back, tells you — in Malayalam — what you got wrong and *why*, and composes your next drill. On a Raspberry Pi 5. No internet.
 
-Built in 24 h at the [Google Physical AI Hackathon: Onam Edition](https://physicalai.tinkerhub.org/), TinkerSpace Kochi, 29–30 Aug 2026 · Themes: **Homecoming (care & accessibility) · Onakalikal** · Powered by Gemma + Gemini.
+Built in 24 h at the [Google Physical AI Hackathon: Onam Edition](https://physicalai.tinkerhub.org/), TinkerSpace Kochi, 29–30 Aug 2026 · Themes: **Onakalikal · Homecoming** · Powered by Gemma 3n + Gemini.
 
-## The problem
-Onam without melam is unthinkable — yet Kerala's 2–3 lakh deaf and hard‑of‑hearing people stand in the crowd and feel only a blur. Existing "music vests" map loudness to buzz; a melam through that is noise.
+## Why
+Chenda has been taught for centuries by *vaaythari* — the asan chants syllables (*tha‑ki‑ta, dhim‑tha‑ka*), the student plays them back, the asan corrects. Good asans are few, far, and expensive; most kids who want to play for Onam never get one. Vaaythari puts that loop in a box.
 
 ## Sense → Think → Act
 | | |
 |---|---|
-| **Sense** | A microphone on the hub hears the live ensemble. |
-| **Think — reflex** | DSP splits the sound into bass / treble / horn / cymbal energy at 100 Hz and fires vibrations within 20 ms. |
-| **Think — judgement** | **Gemma 3n, offline, every 2 s, listens to the clip** and decides: which instruments are actually playing (valanthala, idanthala, elathalam, kombu, kuzhal), which *kaalam* we're in, whether a kombu solo or the *kalasham* climax is starting — then writes the **haptic score**: which body sites each instrument goes to, how strong, what motif marks an event, and a caption in English + Malayalam. It also honours the wearer's preferences in plain language ("softer chest, more cymbals"). |
-| **Act** | 8 vibration motors — chest, back, both wrists, both shoulders, both fingertips — driven by PWM on a XIAO ESP32‑S3. OLED shows the captions; an LED strip mirrors the body map for sighted people. |
+| **Sense** | Mic hears the student's strokes. MPU6050 on the stick measures every hit's force and wrist angle. Mic also hears the student *talk* to the asan. |
+| **Think (Gemma 3n, on‑device)** | Hears the clip and **transcribes the playing into syllables** ("you played tha‑ka‑*ta‑ta*"), compares with what it asked, **fuses the IMU** ("third stroke weak because your wrist dropped"), **composes the next drill** under teaching rules, and **understands Malayalam requests** ("asan, pathukke"). Strict JSON out. |
+| **Act** | Three wrist buzzers tap the phrase before you play — right hand, left hand, accent — so you *feel* it first. The asan speaks Malayalam (espeak‑ng). Weak strokes get a haptic nudge. |
 
-After the performance, the **Gemini API** turns the session log into a report on how the piece was felt and how to improve the mapping.
+**Gemini API** (cloud, after class): the asan's notebook — progress report and tomorrow's lesson plan.
 
-**Removal tests:** no wearable → nothing to feel. No Gemma → a loudness vest. Both fail, as they should.
+**Removal tests.** No mic/IMU/buzzers → nothing to hear, measure, or teach with. No Gemma → a metronome that can't tell *tha* from *ka*. Timing is math and we say so; Gemma does only what a model can do — see [`docs/GEMMA_MAX.md`](docs/GEMMA_MAX.md).
 
-## Why Gemma *on‑device*
-- Temple grounds and festival crowds have no reliable connectivity.
-- Latency: 2 s musical re‑planning next to a 10 ms reflex loop needs the model beside the DSP.
-- Gemma 3n hears audio natively, so instrument identity, kaalam and climax — musical concepts a spectrum can't express — are decided locally, continuously, for free.
+## Creative modes
+Call‑and‑response · Composer asan · Talk to the asan · Feel‑first (deaf learners) · Kaalam ladder · Melam mode (2 students) · Onam mini‑game · Stick posture coach · Visible vaaythari diff — scoped in [`docs/CREATIVE_ELEMENTS.md`](docs/CREATIVE_ELEMENTS.md).
 
 ## Repo
 ```
-firmware/spandanam_band/   XIAO ESP32-S3: 8-channel PWM haptic band, UDP frames
-hub/spandanam/             audio · dsp (reflex) · gemma_ear (judgement) · haptic (frame composer) · console · gemini_report
-hub/spandanam/fake_band.py dev stand-in for the wearable
-hub/spandanam/pi_band.py   drive buzzers/motors straight from Pi 5 GPIO (--band gpio)
-hub/spandanam/tap_sync.py  IMU tap-along: is the wearer locked to the beat?
-tests/                     pytest
-docs/                      BOM · ARCHITECTURE · PLAN_24H
+hub/asan/
+  main.py          lesson loop: demonstrate → listen → hear → correct → teach
+  gemma_asan.py    Gemma 3n: hear() teach() intent()  — strict JSON, offline
+  vaaythari.py     syllables ↔ hands, tap schedule, asked-vs-played diff
+  imu.py           MPU6050 stick reader → strokes (peak g, tilt)
+  pi_band.py       3 wrist buzzers on Pi 5 PWM (--dry for laptop)
+  speech.py        espeak-ng / say  (Malayalam TTS); STT is Gemma itself
+  audio.py         mic → 16 kHz WAV
+  gemini_notebook.py  post-class report (Gemini API)
+tests/             pytest
+docs/              CREATIVE_ELEMENTS · GEMMA_MAX · SHOPPING · PLAN_24H
 ```
 
 ## Quick start
 ```bash
-brew install ollama            # or curl -fsSL https://ollama.com/install.sh | sh
-ollama pull gemma3n:e4b        # fallback: gemma3n:e2b
-cd hub && pip install -e ".[dev]" soundfile
+# Pi 5 (or laptop with --dry)
+curl -fsSL https://ollama.com/install.sh | sh && ollama pull gemma3n:e4b   # e2b if slow
+sudo apt install -y espeak-ng portaudio19-dev i2c-tools && sudo raspi-config nonint do_i2c 0
+cd hub && pip install -e ".[dev]" smbus2
 
-python -m spandanam.fake_band                     # terminal 1: pretend wearable
-python -m spandanam.main --band 127.0.0.1 --wav ../assets/panchari.wav   # terminal 2: from a recording
-python -m spandanam.main --prefs "softer chest, more cymbals"            # live mic, real band
-
-# post-session report
-GEMINI_API_KEY=... python -c "from spandanam.gemini_report import *; from pathlib import Path; \
-  print(generate_report(Path('data/sessions/<id>/session.json'), 'gemini-2.5-flash'))"
+python -m asan.main --dry --lang en          # laptop: no GPIO/I2C
+python -m asan.main --voice                  # Pi: buzzers + IMU + talk to the asan
+GEMINI_API_KEY=... python -c "from asan.gemini_notebook import report; from pathlib import Path; print(report(Path('data/sessions/<id>/session.json'), 'gemini-2.5-flash'))"
 ```
-Kit we have today (Pi 5 + 3 buzzers + IMU): [`docs/KIT_NOW.md`](docs/KIT_NOW.md) · Full wearable: [`firmware/spandanam_band/README.md`](firmware/spandanam_band/README.md) · Parts: [`docs/BOM.md`](docs/BOM.md).
+Wiring: buzzers → GPIO18 (right) / GPIO13 (left) / GPIO12 (accent) via 100 Ω to GND; MPU6050 → SDA GPIO2, SCL GPIO3, 3V3, GND. Shopping list: [`docs/SHOPPING.md`](docs/SHOPPING.md).
 
 ## Tests
 ```bash

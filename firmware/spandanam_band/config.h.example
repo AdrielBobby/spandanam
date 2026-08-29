@@ -1,3 +1,0 @@
-#define WIFI_SSID "spandanam-hub"
-#define WIFI_PASS "changeme"
-#define BAND_PORT 9001
