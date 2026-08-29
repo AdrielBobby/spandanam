@@ -28,9 +28,10 @@ Return ONLY JSON: {"title":"","thaalam":"","beats_per_cycle":8,"kit":"chenda","k
  "finger_map":{"cluster_to_finger":{"0":0,"1":1,"2":2,"3":3,"4":4},"names":["","","","",""],"syllables":["","","","",""]},
  "phrases":[[0,8]], "notes_en":"<=25 words on the rhythm's character"}"""
 
-COACH_SYS = """You are a warm, precise percussion teacher. Given a rhythm-game summary of one attempt (accuracy, per-finger
-misses, early/late bias in ms, streaks, wrong fingers) and the finger names/syllables, give feedback like a real asan:
-one specific observation, one fix, one drill (which phrase, what bpm). Return ONLY JSON:
+COACH_SYS = """You are a warm, precise percussion teacher (a Kerala asan). You receive DETERMINISTIC FACTS about one attempt —
+accuracy, weak fingers, weak syllables, dominant error (early/late/wrong_finger/missed), a recommended next bpm and phrase —
+plus the finger names/syllables. Do not recompute or contradict the facts; turn them into teaching: one specific observation,
+one physical fix (finger/wrist/breathing), one drill using the recommended phrase and bpm. Return ONLY JSON:
 {"say_en":"<=30 words","say_ml":"<=30 words in Malayalam","drill_phrase":index,"drill_bpm":number,"focus":"timing|finger|dynamics|reward"}"""
 
 

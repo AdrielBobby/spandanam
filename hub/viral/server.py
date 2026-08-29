@@ -16,6 +16,7 @@ from fastapi.staticfiles import StaticFiles
 from . import judge
 from .config import FINGER_KEYS, KITS, Config
 from .events import Strike
+from .bridge import phrase_to_score
 from .gemma_thaalam import coach
 from .gemini_compose import compose
 from .hardware import Glove
@@ -174,6 +175,12 @@ def create_app(cfg: Config) -> FastAPI:
                 elif t == "practice": await hub.start_practice(m.get("phrase"), float(m.get("speed", 1.0)))
                 elif t == "stop": await hub.stop_all(); hub.mode = "idle"
                 elif t == "load_score": hub.score = score_from_dict(m.get("score", {}))
+                elif t == "phrase":                      # vaaythari phrase -> practice score (uses asan.config.SYLLABLE_FINGER)
+                    try:
+                        hub.score = phrase_to_score([x for x in str(m.get("text", "")).replace("-", " ").split() if x], float(m.get("bpm", hub.bpm)), cycles=int(m.get("cycles", 2)))
+                        await hub.broadcast({"type": "score", "score": json.loads(hub.score.to_json()), "gemma": "vaaythari phrase"})
+                    except ValueError as e:
+                        await hub.broadcast({"type": "status", "text": f"phrase error: {e}"})
         except WebSocketDisconnect:
             hub.clients.discard(sock)
     return app

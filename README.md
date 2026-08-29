@@ -35,7 +35,13 @@ hub/viral/
   sound.py          synth percussion kits (chenda/mridangam/tabla/kit); WAV samples optional
   hardware.py       5 buzzers + 5 LEDs on Pi GPIO (--dry on laptop)
   imu.py            MPU6050 → strikes (peak g, tilt)
-tests/              pytest (judge, score, transcription, Gemma parsing)
+  bridge.py         asan ↔ viral: vaaythari phrase → Score; deterministic analysis → Gemma coach input
+hub/asan/           pure scheduler / scorer / practice / analysis layer + console CLIs (Adriel) — 80 tests
+  scheduler.py      phrase → expected finger events; score_events() with timing windows
+  practice.py       summaries, cues, result tables
+  analysis.py       deterministic post-round facts (weak fingers, dominant error, next tempo/phrase) that Gemma explains
+  input_sources.py  InputEvent + keyboard simulator (Windows console)
+tests/              pytest — 91 tests across both packages
 docs/               CREATIVE_ELEMENTS · GEMMA_MAX · SHOPPING · PLAN_24H · WIRING
 ```
 

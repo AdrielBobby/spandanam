@@ -44,6 +44,7 @@ button.ghost{width:100%;margin-top:6px;background:#1a1a1a;color:#fff;border:1px 
     <label>Audio (mp3/wav)</label><input type="file" id="file" accept="audio/*"><button class="primary" id="upload">Analyze with Gemma</button>
     <hr style="border-color:#222"><label>…or compose with Gemini</label><input id="brief" placeholder="playful Onam melam, builds to a kalasham">
     <select id="ckit"></select><button class="ghost" id="compose">Compose</button>
+    <hr style="border-color:#222"><label>…or type a vaaythari phrase</label><input id="phraseText" placeholder="dhim tha ka ta ki" value="dhim tha ka ta ki"><button class="ghost" id="loadPhrase">Load phrase</button>
     <div id="scoreInfo" style="margin-top:10px;color:#bbb;font-size:13px"></div></div>
   <div class="card hidden" id="cPractice"><h3>Practice</h3>
     <label>Phrase</label><select id="phrase"><option value="">whole piece</option></select>
@@ -88,6 +89,7 @@ $("#goFree").onclick=()=>ws.send(JSON.stringify({type:"free",bpm:+$("#bpm").valu
 $("#stop").onclick=$("#stop2").onclick=()=>{ws.send(JSON.stringify({type:"stop"}));play=null;};
 $("#upload").onclick=async()=>{const f=$("#file").files[0];if(!f)return;const fd=new FormData();fd.append("file",f);$("#status").textContent="uploading…";const r=await fetch("/api/learn",{method:"POST",body:fd});const j=await r.json();$("#status").textContent=j.ok?`learned ${j.notes} notes · ${j.thaalam}`:"error: "+j.error;};
 $("#compose").onclick=async()=>{$("#status").textContent="Gemini composing…";const r=await fetch("/api/compose",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({brief:$("#brief").value,kit:$("#ckit").value,cycles:4,bpm:+$("#bpm").value})});const j=await r.json();$("#status").textContent=j.ok?`composed ${j.notes} notes`:"error: "+j.error;};
+$("#loadPhrase").onclick=()=>ws.send(JSON.stringify({type:"phrase",text:$("#phraseText").value,bpm:+$("#bpm").value,cycles:2}));
 $("#goPractice").onclick=()=>ws.send(JSON.stringify({type:"practice",phrase:$("#phrase").value===""?null:+$("#phrase").value,speed:+$("#speed").value}));
 for(const [t,c] of [["tFree","cFree"],["tLearn","cLearn"],["tPractice","cPractice"]]){$("#"+t).onclick=()=>{document.querySelectorAll(".tabs button").forEach(b=>b.classList.remove("on"));$("#"+t).classList.add("on");["cFree","cLearn","cPractice"].forEach(x=>$("#"+x).classList.toggle("hidden",x!==c));};}
 pad();connect();
