@@ -3,7 +3,7 @@ from viral.malayalam import coach_ml, structure_ml, FINGERS_ML, LABELS_ML
 
 def test_coach_ml_mentions_fingers_error_and_drill():
     s = coach_ml(62.5, "wrong_finger", ["ring", "middle"], ["ka"], 72, 1)
-    assert "മോതിരവിരൽ" in s and "നടുവിരൽ" in s and "തെറ്റായ വിരൽ" in s and "72 bpm" in s and "2-ാം ഭാഗം" in s
+    assert "മോതിരവിരലും നടുവിരലും" in s and "ഉം " not in s and "തെറ്റായ വിരൽ" in s and "72 bpm" in s and "2-ാം ഭാഗം" in s
     assert "63%" in s
 
 

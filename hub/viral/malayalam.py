@@ -4,6 +4,8 @@ from __future__ import annotations
 
 FINGERS_ML = {"thumb": "തള്ളവിരൽ", "index": "ചൂണ്ടുവിരൽ", "middle": "നടുവിരൽ", "ring": "മോതിരവിരൽ", "pinky": "ചെറുവിരൽ"}
 FINGERS_ML_IDX = ["തള്ളവിരൽ", "ചൂണ്ടുവിരൽ", "നടുവിരൽ", "മോതിരവിരൽ", "ചെറുവിരൽ"]
+# "-um" (and) forms: the chillu ൽ fuses with ഉം -> ലും
+FINGERS_ML_UM = {"thumb": "തള്ളവിരലും", "index": "ചൂണ്ടുവിരലും", "middle": "നടുവിരലും", "ring": "മോതിരവിരലും", "pinky": "ചെറുവിരലും"}
 
 LABELS_ML = {
     "app": "താളം", "ashaan_says": "ആശാൻ പറയുന്നു", "free_flow": "സ്വതന്ത്രമായി വായിക്കൂ", "learn": "പഠിക്കൂ", "practice": "പരിശീലനം",
@@ -31,8 +33,11 @@ _FIX_ML = {
 }
 
 
-def _join_ml(items: list[str]) -> str:
-    return items[0] if len(items) == 1 else "ഉം ".join(items[:-1]) + "ഉം " + items[-1] + "ഉം"
+def _fingers_phrase(weak_fingers: list[str]) -> str:
+    """'മോതിരവിരൽ' for one; 'മോതിരവിരലും നടുവിരലും' for two."""
+    if len(weak_fingers) == 1:
+        return FINGERS_ML.get(weak_fingers[0], weak_fingers[0])
+    return " ".join(FINGERS_ML_UM.get(f, f) for f in weak_fingers[:2])
 
 
 def coach_ml(accuracy_pct: float, dominant_error: str, weak_fingers: list[str], weak_syllables: list[str],
@@ -46,10 +51,9 @@ def coach_ml(accuracy_pct: float, dominant_error: str, weak_fingers: list[str], 
     else:
         parts.append("കുഴപ്പമില്ല, പരിശീലിച്ചാൽ ശരിയാകും. കൃത്യത " + f"{int(accuracy_pct + 0.5)}%.")
     parts.append(_ERROR_ML.get(dominant_error, _ERROR_ML["none"]))
-    fingers = [FINGERS_ML.get(f, f) for f in weak_fingers[:2]]
-    if fingers and dominant_error != "none":
+    if weak_fingers and dominant_error != "none":
         syl = f" ('{'/'.join(weak_syllables[:2])}' എന്നിടത്ത്)" if weak_syllables else ""
-        parts.append(_join_ml(fingers) + " ശ്രദ്ധിക്കൂ" + syl + ".")
+        parts.append(_fingers_phrase(weak_fingers) + " ശ്രദ്ധിക്കൂ" + syl + ".")
     parts.append(_FIX_ML.get(dominant_error, _FIX_ML["none"]))
     drill = f"അടുത്തത്: {int(round(recommended_bpm))} bpm-ൽ"
     drill += f" {phrase_index + 1}-ാം ഭാഗം വായിക്കൂ." if phrase_index is not None else " വീണ്ടും വായിക്കൂ."
