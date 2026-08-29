@@ -58,6 +58,16 @@ def test_empty_scales_rejected():
         Ladder(scales=())
 
 
+def test_zero_scale_rejected():
+    with pytest.raises(ValueError, match=r"> 0"):
+        Ladder(scales=(0.6, 0.0, 1.0))
+
+
+def test_negative_scale_rejected():
+    with pytest.raises(ValueError, match=r"> 0"):
+        Ladder(scales=(-1.0,))
+
+
 def test_out_of_range_step_rejected():
     with pytest.raises(ValueError, match="out of range"):
         Ladder(step=99)

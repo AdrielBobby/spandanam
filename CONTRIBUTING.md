@@ -15,6 +15,18 @@ Hackathon mode: small commits, push often, `main` is always demo‑able. Project
 Dashboard → server: `key{key,v}` · `free{bpm,cycle,click}` · `kit{kit}` · `practice{phrase,speed}` · `listen{phrase,speed}` (auto-plays the score through speaker + LEDs, `practice_start` carries `listen:true`, strikes carry `judge:"auto"`) · `stop` · `phrase{text,bpm,cycles}` · `load_score{score}` · `game{passed?,reset?}` (Repeat after Maveli: `reset:true` starts at level 1; send `passed` from the last `practice_end` — stars ≥ 2 = pass) · `ladder{phrase?,scales?}` (kaalam ladder: default scales `[0.6,0.8,1.0,2.0]`; sending `practice`/`listen`/`free`/`stop` cancels any ladder in progress).
 Add a message type? Add it here in the same commit.
 
+**Kaalam ladder example session** (not yet wired into `static/index.html` — falling notes/judging/coaching already play through unchanged via the existing `practice_start`/`strike`/`practice_end`/`coach` handling; only the step/scale narration below needs new UI):
+```jsonc
+// client, once a phrase/score is loaded:
+{"type": "ladder", "scales": [0.6, 0.8, 1.0, 2.0]}   // scales optional, this is the default
+
+// server, conceptually:
+// ladder_start{total_steps:4, bpm_scale:0.6} -> practice_start (round 1 plays)
+// practice_end -> coach -> ladder_step_up{step:1, bpm_scale:0.8} -> practice_start (round 2 plays)
+// ... or, on a failed round instead: ladder_retry{step:0, bpm_scale:0.6} -> practice_start (same step replays)
+// ... until: ladder_complete{step:null, bpm_scale:null} after the last step passes
+```
+
 ## Branches
 - `main` — always runs. Merge via PR or fast‑forward after a quick check.
 - `fw/*` firmware, `hub/*` hub, `docs/*` docs.

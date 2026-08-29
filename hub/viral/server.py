@@ -245,8 +245,11 @@ def create_app(cfg: Config) -> FastAPI:
                 elif t == "practice": hub.ladder = None; await hub.start_practice(m.get("phrase"), float(m.get("speed", 1.0)))
                 elif t == "listen": hub.ladder = None; await hub.start_listen(m.get("phrase"), float(m.get("speed", 1.0)))
                 elif t == "ladder":                       # kaalam ladder: same phrase through a tempo sequence, auto-advancing
-                    scales = tuple(float(x) for x in m["scales"]) if m.get("scales") else DEFAULT_SCALES
-                    await hub.start_ladder(m.get("phrase"), scales)
+                    try:
+                        scales = tuple(float(x) for x in m["scales"]) if m.get("scales") else DEFAULT_SCALES
+                        await hub.start_ladder(m.get("phrase"), scales)
+                    except (ValueError, TypeError) as e:
+                        await hub.broadcast({"type": "status", "text": f"ladder error: {e}"})
                 elif t == "stop": hub.ladder = None; await hub.stop_all(); hub.mode = "idle"
                 elif t == "load_score": hub.score = score_from_dict(m.get("score", {}))
                 elif t == "game":                        # Repeat after Maveli: next round (level up on pass, same level on fail)

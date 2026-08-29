@@ -25,6 +25,9 @@ class Ladder:
     def __post_init__(self) -> None:
         if not self.scales:
             raise ValueError("Ladder.scales must be non-empty")
+        non_positive = [s for s in self.scales if s <= 0]
+        if non_positive:
+            raise ValueError(f"Ladder.scales must all be > 0, got {non_positive}")
         if not (0 <= self.step < len(self.scales)):
             raise ValueError(f"Ladder.step {self.step} out of range for {len(self.scales)} scales")
 
