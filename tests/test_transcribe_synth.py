@@ -84,3 +84,10 @@ def test_build_kit_from_synthetic(tmp_path, monkeypatch):
     tr = transcribe(str(p))
     out = sample_kit.build_kit(p, tr, {i: i for i in range(5)}, "track_t")
     assert out is not None and all((out / f"{i}.wav").exists() for i in range(5))
+
+
+def test_shape_sample_has_soft_edges():
+    import numpy as np
+    from viral.sample_kit import shape_sample
+    seg = shape_sample(np.ones(22050, dtype=np.float32), 22050)
+    assert seg[0] == 0 and seg[-1] < 1e-3 and seg[22050 // 2] > 0.95 and abs(seg[-int(22050*0.35)//2] - 0.5) < 0.05

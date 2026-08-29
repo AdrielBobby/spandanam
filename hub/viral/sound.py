@@ -34,13 +34,50 @@ KIT_PARAMS = {
 KITS_DIR = Path(__file__).resolve().parents[2] / "assets" / "kits"
 
 
+class Mixer:
+    """Persistent output stream that sums overlapping voices, so a new hit never cuts the previous one off."""
+
+    def __init__(self, sr: int = SR, max_voices: int = 24):
+        import sounddevice as sd
+        import threading
+        self.sd, self.sr, self.max_voices = sd, sr, max_voices
+        self._voices: list[tuple[np.ndarray, int]] = []          # (buffer, position)
+        self._lock = threading.Lock()
+        self.stream = sd.OutputStream(samplerate=sr, channels=1, dtype="float32", blocksize=256, callback=self._cb)
+        self.stream.start()
+
+    def _cb(self, out, frames, _time, _status):
+        mix = np.zeros(frames, dtype=np.float32)
+        with self._lock:
+            alive = []
+            for buf, pos in self._voices:
+                chunk = buf[pos:pos + frames]
+                mix[:chunk.size] += chunk
+                if pos + frames < buf.size:
+                    alive.append((buf, pos + frames))
+            self._voices = alive
+        np.clip(mix, -1.0, 1.0, out=mix)                       # soft ceiling
+        out[:, 0] = mix
+
+    def trigger(self, buf: np.ndarray) -> None:
+        with self._lock:
+            if len(self._voices) >= self.max_voices:
+                self._voices.pop(0)
+            self._voices.append((buf, 0))
+
+    def stop(self) -> None:
+        with self._lock:
+            self._voices = []
+
+
 class Sampler:
     def __init__(self, kit: str, assets: Path | None = None):
         self.kit = kit
         self.buf = self._load(kit, assets or KITS_DIR)
+        self.mixer = None
         try:
-            import sounddevice as sd
-            self.sd = sd
+            self.mixer = Mixer(SR)
+            self.sd = self.mixer.sd
         except Exception as e:  # headless dev
             log.warning("no audio device: %s", e); self.sd = None
 
@@ -59,9 +96,12 @@ class Sampler:
         self.kit, self.buf = kit, self._load(kit, assets or KITS_DIR)
 
     def play(self, finger: int, velocity: float = 1.0) -> None:
-        if self.sd is None:
+        if self.mixer is None:
             return
         try:
-            self.sd.play(self.buf[finger % 5] * float(min(1.0, velocity)), SR, blocking=False)
+            self.mixer.trigger(self.buf[finger % 5] * float(min(1.0, max(0.15, velocity))))
         except Exception as e:
             log.debug("play failed: %s", e)
+
+    def stop(self) -> None:
+        if self.mixer: self.mixer.stop()

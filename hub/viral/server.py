@@ -85,7 +85,7 @@ class Hub:
         self.play = None; self.glove.all_off()
         if self.mode in ("listen", "practice"): self.mode = "idle"      # _listen_loop / _practice_loop check this and exit
         try:
-            if self.sampler.sd: self.sampler.sd.stop()
+            self.sampler.stop()
         except Exception: pass
 
     # ---- listen mode: auto-play the score (speaker + LEDs) while the lanes fall, no judging

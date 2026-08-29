@@ -82,7 +82,7 @@ def _clip_wav(path: str, seconds: float = 6.0) -> bytes | None:
         log.debug("clip failed: %s", e); return None
 
 
-ALGO_VERSION = "v6-thin-realkit"     # bump when transcription/digest logic changes so stale caches are ignored
+ALGO_VERSION = "v7-kit-envelope"     # bump when transcription/digest logic changes so stale caches are ignored
 
 
 def _cache_path(path: Path, model: str) -> Path:

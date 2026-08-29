@@ -33,22 +33,36 @@ def pick_strikes(tr: Transcription, cluster_to_finger: dict[int, int], min_gap_s
     return {f: v[2] for f, v in best.items() if v[0] >= min_gap_s * 0.5}
 
 
+def shape_sample(seg: np.ndarray, sr: int, attack_s: float = 0.005, release_frac: float = 0.35) -> np.ndarray:
+    """Click-free envelope: short linear attack, long raised-cosine release over the tail."""
+    seg = seg.astype(np.float32).copy()
+    a = min(int(attack_s * sr), seg.size // 4)
+    if a > 0:
+        seg[:a] *= np.linspace(0.0, 1.0, a, dtype=np.float32)
+    r = max(int(seg.size * release_frac), min(seg.size, int(0.05 * sr)))
+    if r > 0:
+        seg[-r:] *= (0.5 * (1 + np.cos(np.linspace(0, np.pi, r)))).astype(np.float32)
+    return seg
+
+
 def build_kit(path: Path, tr: Transcription, cluster_to_finger: dict[int, int], name: str,
-              length_s: float = 0.45, sr: int = 22050) -> Path | None:
+              max_len_s: float = 0.9, min_len_s: float = 0.25, sr: int = 22050) -> Path | None:
     import librosa, soundfile as sf
     y, _ = librosa.load(str(path), sr=sr, mono=True)
     picks = pick_strikes(tr, cluster_to_finger)
     if len(picks) < 3:
         log.info("kit not built for %s: only %d clean strikes", name, len(picks)); return None
     out = KITS_DIR / name; out.mkdir(parents=True, exist_ok=True)
-    n = int(length_s * sr); fade = np.linspace(1, 0, int(0.08 * sr)) ** 2
+    times = np.array(sorted(o.t_s for o in tr.onsets))
     for f in range(5):
         t = picks.get(f)
         if t is None:                                   # missing finger: reuse the nearest available finger's sample
             t = picks[min(picks, key=lambda k: abs(k - f))]
-        i0 = max(0, int((t - 0.005) * sr)); seg = y[i0:i0 + n].copy()
+        nxt = times[times > t + 0.02]
+        length = float(np.clip((nxt[0] - t - 0.02) if nxt.size else max_len_s, min_len_s, max_len_s))   # ring until just before the next hit
+        i0 = max(0, int((t - 0.003) * sr)); n = int(length * sr); seg = y[i0:i0 + n]
         if seg.size < n: seg = np.pad(seg, (0, n - seg.size))
-        seg[-fade.size:] *= fade
+        seg = shape_sample(seg, sr)
         peak = float(np.abs(seg).max()) or 1.0
         sf.write(out / f"{f}.wav", (seg / peak * 0.9).astype(np.float32), sr)
     log.info("built kit %s from %s (%d fingers sampled)", name, path.name, len(picks))
