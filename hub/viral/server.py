@@ -29,10 +29,16 @@ from .malayalam import LABELS_ML, coach_ml, structure_ml
 from .metronome import run_metronome
 from .score import Score, score_from_dict
 from .sound import Sampler
+from . import speech
 
 log = logging.getLogger("viral")
 ROOT = Path(__file__).parent
 TRACKS = ROOT.parents[1] / "assets" / "tracks"
+
+
+def chantable_syllables(sc: Score) -> tuple[str, ...]:
+    """sc's vaaythari syllables in note order; drops unlabeled notes (learn/compose scores may lack real syllables)."""
+    return tuple(n.label for n in sc.notes if n.label)
 
 
 class Hub:
@@ -102,6 +108,7 @@ class Hub:
         self.sampler.set_kit(sc.kit)
         lead_in = 2 * sc.beat_s; start = time.monotonic() + lead_in
         await self.broadcast({"type": "practice_start", "score": json.loads(sc.to_json()), "lead_in_s": lead_in, "listen": True})
+        self._chant(sc)
         asyncio.create_task(self._listen_loop(sc, start))
 
     async def _listen_loop(self, sc: Score, start: float) -> None:
@@ -127,6 +134,7 @@ class Hub:
         start = time.monotonic() + lead_in
         self.play = judge.PlayState(start_s=start)
         await self.broadcast({"type": "practice_start", "score": json.loads(sc.to_json()), "lead_in_s": lead_in})
+        self._chant(sc)
         asyncio.create_task(self._practice_loop(sc))
 
     # ---- kaalam ladder: practice the same phrase up through a sequence of tempo
@@ -176,6 +184,12 @@ class Hub:
 
     def _per_finger(self, sc: Score) -> list[int]:
         return [sum(1 for n in sc.notes if n.finger == f) for f in range(5)]
+
+    def _chant(self, sc: Score) -> None:
+        """Fire-and-forget the vaaythari chant; speech.chant() blocks on a subprocess, so it must run off the event loop."""
+        syllables = chantable_syllables(sc)
+        if syllables:
+            asyncio.get_running_loop().run_in_executor(None, speech.chant, syllables, sc.bpm)
 
 
 def create_app(cfg: Config) -> FastAPI:
