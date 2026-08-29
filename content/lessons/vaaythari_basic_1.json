@@ -1,0 +1,16 @@
+{
+  "id": "vaaythari_basic_1",
+  "name": "Basic Vaaythari 1",
+  "level": "beginner",
+  "tempo_bpm": 60,
+  "phrase": ["dhim", "tha", "ka", "ta", "ki"],
+  "finger_map": {
+    "dhim": "thumb",
+    "tha": "index",
+    "ka": "ring",
+    "ta": "middle",
+    "ki": "ring"
+  },
+  "repeats": 4,
+  "focus": "accuracy"
+}

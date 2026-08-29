@@ -1,0 +1,17 @@
+{
+  "id": "vaaythari_inter_1",
+  "name": "Intermediate Panchari Phrase",
+  "level": "intermediate",
+  "tempo_bpm": 80,
+  "phrase": ["dhim", "tha", "ka", "din", "ta", "ki", "tha", "dhim"],
+  "finger_map": {
+    "dhim": "thumb",
+    "tha": "index",
+    "ka": "ring",
+    "din": "pinky",
+    "ta": "middle",
+    "ki": "ring"
+  },
+  "repeats": 3,
+  "focus": "speed"
+}
