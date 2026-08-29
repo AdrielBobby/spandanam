@@ -47,7 +47,7 @@ class Hub:
 
     async def broadcast(self, msg: dict) -> None:
         dead = []
-        for ws in self.clients:
+        for ws in list(self.clients):
             try: await ws.send_text(json.dumps(msg, ensure_ascii=False))
             except Exception: dead.append(ws)
         for ws in dead: self.clients.discard(ws)
