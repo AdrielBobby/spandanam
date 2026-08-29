@@ -7,13 +7,25 @@ Hackathon mode: small commits, push often, `main` is always demo‑able. Project
 |---|---|---|
 | **Hardware** | Fathima | `hub/viral/hardware.py`, `hub/viral/imu.py`, `docs/WIRING.md`, `docs/SHOPPING.md`, glove build |
 | **UI** | Paulyn | `hub/viral/static/index.html` (+ any new static assets) — talks to the server only through the WebSocket contract below |
-| **Backend** | Adriel | `hub/viral/server.py`, `judge.py`, `score.py`, `metronome.py`, `sound.py`, `hub/asan/*`, tests for those |
+| **Backend** | Adriel | `hub/viral/server.py`, `judge.py`, `score.py`, `metronome.py`, `sound.py`, `ladder.py`, `hub/asan/*`, `dashboard/`, `content/lessons/`, tests for those |
 | **AI/ML** | Ryyan | `hub/viral/gemma_thaalam.py`, `gemini_compose.py`, `transcribe.py`, `learn.py`, `bridge.py`, `gemma_cli.py`, `docs/GEMMA_MAX.md` |
 | Shared | all | README, docs/PLAN_24H.md, CONTRIBUTING (this contract) |
 
-**WebSocket contract** (server → dashboard): `strike{finger,v,src,judge?,offset_ms?,note?,streak?,points?}` · `click{beat,finger,down}` · `score{score,gemma,evidence,confidence,summary_ml}` · `/api/state.labels_ml` = Malayalam UI labels (ആശാൻ പറയുന്നു etc.) · `practice_start{score,lead_in_s}` · `miss{notes,streak}` · `practice_end{summary}` · `coach{say_en,say_ml (Malayalam script, deterministic),say_manglish (Gemma),drill_phrase,drill_bpm,focus}` · `status{text}` · `kit{kit}` · `game{level,phrase,bpm,banter,source}` (followed by a `score` message — call `practice` to play it).
-Dashboard → server: `key{key,v}` · `free{bpm,cycle,click}` · `kit{kit}` · `practice{phrase,speed}` · `listen{phrase,speed}` (auto-plays the score through speaker + LEDs, `practice_start` carries `listen:true`, strikes carry `judge:"auto"`) · `stop` · `phrase{text,bpm,cycles}` · `load_score{score}` · `game{passed?,reset?}` (Repeat after Maveli: `reset:true` starts at level 1; send `passed` from the last `practice_end` — stars ≥ 2 = pass).
+**WebSocket contract** (server → dashboard): `strike{finger,v,src,judge?,offset_ms?,note?,streak?,points?}` · `click{beat,finger,down}` · `score{score,gemma,evidence,confidence,summary_ml}` · `/api/state.labels_ml` = Malayalam UI labels (ആശാൻ പറയുന്നു etc.) · `practice_start{score,lead_in_s}` · `miss{notes,streak}` · `practice_end{summary}` · `coach{say_en,say_ml (Malayalam script, deterministic),say_manglish (Gemma),drill_phrase,drill_bpm,focus}` · `status{text}` · `kit{kit}` · `game{level,phrase,bpm,banter,source}` (followed by a `score` message — call `practice` to play it) · `ladder_start{total_steps,bpm_scale}` · `ladder_step_up{total_steps,step,bpm_scale}` · `ladder_retry{total_steps,step,bpm_scale}` · `ladder_complete{total_steps,step:null,bpm_scale:null}` (kaalam ladder: each `practice_end` auto-advances or retries — see `ladder.py`).
+Dashboard → server: `key{key,v}` · `free{bpm,cycle,click}` · `kit{kit}` · `practice{phrase,speed}` · `listen{phrase,speed}` (auto-plays the score through speaker + LEDs, `practice_start` carries `listen:true`, strikes carry `judge:"auto"`) · `stop` · `phrase{text,bpm,cycles}` · `load_score{score}` · `game{passed?,reset?}` (Repeat after Maveli: `reset:true` starts at level 1; send `passed` from the last `practice_end` — stars ≥ 2 = pass) · `ladder{phrase?,scales?}` (kaalam ladder: default scales `[0.6,0.8,1.0,2.0]`; sending `practice`/`listen`/`free`/`stop` cancels any ladder in progress).
 Add a message type? Add it here in the same commit.
+
+**Kaalam ladder example session** (not yet wired into `static/index.html` — falling notes/judging/coaching already play through unchanged via the existing `practice_start`/`strike`/`practice_end`/`coach` handling; only the step/scale narration below needs new UI):
+```jsonc
+// client, once a phrase/score is loaded:
+{"type": "ladder", "scales": [0.6, 0.8, 1.0, 2.0]}   // scales optional, this is the default
+
+// server, conceptually:
+// ladder_start{total_steps:4, bpm_scale:0.6} -> practice_start (round 1 plays)
+// practice_end -> coach -> ladder_step_up{step:1, bpm_scale:0.8} -> practice_start (round 2 plays)
+// ... or, on a failed round instead: ladder_retry{step:0, bpm_scale:0.6} -> practice_start (same step replays)
+// ... until: ladder_complete{step:null, bpm_scale:null} after the last step passes
+```
 
 ## Branches
 - `main` — always runs. Merge via PR or fast‑forward after a quick check.
