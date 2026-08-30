@@ -226,7 +226,8 @@ async def coach(client, url, model, summary: dict, names: tuple[str, ...], sylla
             d = normalize_keys(json.loads(c)) if c else {}
         except json.JSONDecodeError:
             d = {}
-        return {"say_en": str(d.get("say_en", "")), "say_ml": "", "drill_phrase": d.get("drill_phrase", 0),
+        say = str(d.get("say_en") or next((v for v in d.values() if isinstance(v, str) and len(v) > 15), ""))
+        return {"say_en": say, "say_ml": "", "drill_phrase": d.get("drill_phrase", 0),
                 "drill_bpm": d.get("drill_bpm", summary.get("recommended_bpm")), "focus": str(d.get("focus", "timing")), "model": model}
     c = await _chat(client, url, model, COACH_SYS, json.dumps({"attempt": summary, "names": names, "syllables": syllables}), None, 220)
     try:
