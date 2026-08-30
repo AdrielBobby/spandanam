@@ -6,7 +6,7 @@ Hackathon mode: small commits, push often, `main` is always demo‑able. Project
 | Lane | Owner | Files you own — others only touch via a quick ping |
 |---|---|---|
 | **Hardware** | Fathima | `hub/viral/hardware.py`, `hub/viral/imu.py`, `docs/WIRING.md`, `docs/SHOPPING.md`, glove build |
-| **UI** | Ryyan (with Adriel) | `hub/viral/static/index.html` (+ any new static assets) — talks to the server only through the WebSocket contract below |
+| **UI** | Adriel | `hub/viral/static/index.html`, `style.css`, `app.js` (+ any new static/asset files) — talks to the server only through the WebSocket contract below |
 | **Backend** | Adriel | `hub/viral/server.py`, `judge.py`, `score.py`, `metronome.py`, `sound.py`, `ladder.py`, `motion.py`, `hub/asan/*`, `dashboard/`, `content/lessons/`, tests for those |
 | **AI/ML** | Ryyan | `hub/viral/gemma_thaalam.py`, `gemini_compose.py`, `transcribe.py`, `learn.py`, `bridge.py`, `gemma_cli.py`, `docs/GEMMA_MAX.md` |
 | Shared | all | README, docs/PLAN_24H.md, CONTRIBUTING (this contract) |
@@ -19,7 +19,7 @@ Add a message type? Add it here in the same commit.
 
 **Vaaythari karaoke (TTS chant).** When Practice or Listen starts (including each round of a kaalam ladder — it calls `start_practice` internally), the server chants the score's vaaythari syllables aloud via `speech.chant()` (espeak-ng / macOS `say`), timed to the score's bpm. Runs in a thread executor during the round's lead-in, off the event loop, since it's a blocking subprocess call. No new WS message — it's server-side audio only. Silently skipped for scores with no `Note.label` (e.g. some learn/compose results), and silently logs instead of speaking if neither TTS backend is installed — see `speech.py`.
 
-**Kaalam ladder example session** (not yet wired into `static/index.html` — falling notes/judging/coaching already play through unchanged via the existing `practice_start`/`strike`/`practice_end`/`coach` handling; only the step/scale narration below needs new UI):
+**Kaalam ladder example session** (falling notes/judging/coaching already play through unchanged via the existing `practice_start`/`strike`/`practice_end`/`coach` handling; the step/scale narration below is the only new UI surface):
 ```jsonc
 // client, once a phrase/score is loaded:
 {"type": "ladder", "scales": [0.6, 0.8, 1.0, 2.0]}   // scales optional, this is the default

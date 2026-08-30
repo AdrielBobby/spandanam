@@ -1,150 +1,135 @@
-<!doctype html><html><head><meta charset="utf-8"><title>Thaalam</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%2714%27 fill=%27%23f5c400%27/%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%276%27 fill=%27%230a0a0a%27/%3E%3C/svg%3E">
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Noto+Sans+Malayalam:wght@400;600;700&display=swap');
-:root{--bg:#070707;--panel:#101010;--panel2:#161616;--line:#222;--fg:#f4f4f4;--mut:#8b8b8b;--gold:#f5c400;--gold2:#ffd93d;--green:#3ecf8e;--red:#e5484d;
- --c0:#ff453a;--c1:#ff9f0a;--c2:#ffd60a;--c3:#30d158;--c4:#0a84ff}
-*{box-sizing:border-box}html,body{height:100%}
-body{margin:0;background:#070707 radial-gradient(900px 500px at 80% -20%,rgba(245,196,0,.10),transparent 60%);color:var(--fg);font:15px/1.45 "Space Grotesk",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
-.ml,.mlbig,.mln{font-family:"Noto Sans Malayalam","Manjari","Malayalam Sangam MN",system-ui,sans-serif}
-header{display:flex;gap:16px;align-items:center;padding:12px 22px;border-bottom:1px solid var(--line);background:rgba(7,7,7,.8);backdrop-filter:blur(10px);position:sticky;top:0;z-index:5}
-h1{font-size:24px;margin:0 6px 0 0;letter-spacing:-1px;font-weight:700}h1 span{color:var(--gold)}
-.tabs{display:flex;gap:4px;background:var(--panel);padding:4px;border-radius:12px;border:1px solid var(--line)}
-.tabs button{background:transparent;color:var(--mut);border:0;padding:8px 14px;border-radius:9px;cursor:pointer;font:inherit;font-weight:600;display:flex;gap:6px;align-items:baseline}
-.tabs button:hover{color:#ddd}.tabs button.on{background:var(--gold);color:#000}.tabs button .ml{font-size:12px;opacity:.75;font-weight:400}.tabs button.on .ml{color:#3a2f00;opacity:1}
-.pills{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
-.pill{font-size:11px;padding:5px 10px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:#cfcfcf;white-space:nowrap;display:flex;gap:6px;align-items:center}
-.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
-.pill.gold{border-color:#4a3d00;color:var(--gold2)}.pill.gold::before{background:var(--gold);box-shadow:0 0 8px var(--gold)}.pill.plain::before{display:none}
-#status{color:var(--mut);font-size:12px}
-main{display:grid;grid-template-columns:minmax(0,1fr) 350px;gap:18px;padding:18px 22px;max-width:1540px;margin:0 auto}
-#lanes{position:relative;height:calc(100vh - 140px);min-height:540px;background:#0b0b0b;border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6),inset 0 0 0 1px rgba(255,255,255,.02)}
-.lane{position:absolute;top:0;bottom:0;width:20%;border-right:1px solid rgba(255,255,255,.04)}
-.lane:nth-child(1){background:linear-gradient(180deg,transparent 40%,rgba(255,69,58,.10))}.lane:nth-child(2){background:linear-gradient(180deg,transparent 40%,rgba(255,159,10,.10))}
-.lane:nth-child(3){background:linear-gradient(180deg,transparent 40%,rgba(255,214,10,.10))}.lane:nth-child(4){background:linear-gradient(180deg,transparent 40%,rgba(48,209,88,.10))}
-.lane:nth-child(5){background:linear-gradient(180deg,transparent 40%,rgba(10,132,255,.10))}
-.hitline{position:absolute;left:0;right:0;bottom:96px;height:3px;background:linear-gradient(90deg,transparent,var(--gold) 15%,var(--gold) 85%,transparent);box-shadow:0 0 22px rgba(245,196,0,.55);animation:pulse 1.2s ease-in-out infinite}
-@keyframes pulse{0%,100%{opacity:.75}50%{opacity:1}}
-.note{position:absolute;width:15%;left:2.5%;height:26px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#0b0b0b;letter-spacing:.4px;box-shadow:0 0 14px rgba(255,255,255,.15),0 4px 14px rgba(0,0,0,.5);background-image:linear-gradient(180deg,rgba(255,255,255,.35),rgba(255,255,255,0))}
-.pad{position:absolute;bottom:0;left:0;right:0;height:90px;display:flex;background:linear-gradient(180deg,rgba(0,0,0,.2),rgba(0,0,0,.6));border-top:1px solid var(--line)}
-.pad div{flex:1;margin:10px 7px;border-radius:14px;background:#121212;border:2px solid #2a2a2a;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;color:#9a9a9a;transition:transform .06s,box-shadow .06s,filter .06s;position:relative}
-.pad div.hit{transform:scale(.95);filter:brightness(1.7);box-shadow:0 0 30px currentColor}
-.pad b{font-size:15px;color:#fff;letter-spacing:.2px}.pad small{color:var(--gold2);font-size:12px;font-weight:600}.pad .mln{font-size:12px;color:#a8a8a8}
-.pad .key{position:absolute;top:6px;right:8px;font-size:10px;color:#666;border:1px solid #333;border-radius:5px;padding:1px 5px}
-#hint{position:absolute;top:42%;left:0;right:0;text-align:center;color:#5a5a5a;font-size:16px;pointer-events:none}#hint b{color:#8a8a8a}#hint .ml{display:block;font-size:15px;color:#4c4c4c;margin-top:8px}
-#judge{position:absolute;top:22px;left:0;right:0;text-align:center;font-size:42px;font-weight:700;opacity:0;transition:opacity .15s,transform .15s;text-shadow:0 6px 30px rgba(0,0,0,.7);letter-spacing:-.5px}
-#stats{position:absolute;top:16px;right:18px;text-align:right;color:#bbb;font-size:13px}#stats b{color:var(--gold);font-size:30px;font-weight:700;letter-spacing:-1px}
-#overlay{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);z-index:3}
-#overlay .box{background:linear-gradient(180deg,#171512,#0f0f0f);border:1px solid #3a3000;border-radius:18px;padding:26px 32px;text-align:center;min-width:320px;box-shadow:0 30px 90px rgba(0,0,0,.7)}
-#overlay .stars{font-size:44px;color:var(--gold);letter-spacing:6px;text-shadow:0 0 30px rgba(245,196,0,.5)}#overlay .big{font-size:32px;font-weight:700;margin:6px 0}#overlay small{color:var(--mut)}
-aside .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px 18px;margin-bottom:12px}
-aside h3{margin:0 0 10px 0;font-size:14px;letter-spacing:.2px;color:#ececec;display:flex;gap:8px;align-items:baseline}aside h3 .ml{color:var(--mut);font-size:12px;font-weight:400}
-label{display:block;color:var(--mut);font-size:12px;margin-top:12px}
-input,select{width:100%;background:#0b0b0b;color:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 11px;margin-top:6px;font:inherit}
-select:focus,input:focus{outline:none;border-color:#4a3d00}
-input[type=range]{padding:0;accent-color:var(--gold);height:24px}
-button.primary{width:100%;margin-top:14px;background:linear-gradient(180deg,var(--gold2),var(--gold));color:#000;border:0;padding:12px;border-radius:11px;font:inherit;font-weight:700;cursor:pointer;box-shadow:0 8px 24px rgba(245,196,0,.18)}
-button.primary:hover{filter:brightness(1.05)}
-button.ghost{width:100%;margin-top:8px;background:#151515;color:#fff;border:1px solid #2e2e2e;padding:10px;border-radius:11px;font:inherit;cursor:pointer}button.ghost:hover{border-color:#555}
-#coach{white-space:pre-wrap;color:#ddd}.mlbig{font-size:17px;color:#fff;line-height:1.7}.ml{color:#bbb;font-size:13px}.en{color:#9a9a9a;font-size:13px;margin-top:8px;line-height:1.5}
-.ashaan{display:flex;gap:12px;align-items:flex-start}.avatar{flex:none;width:40px;height:40px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#ffe27a,#b98a00);color:#2a2000;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;box-shadow:0 6px 18px rgba(245,196,0,.25)}
-.hidden{display:none}
-.click{position:absolute;bottom:0;height:90px;width:20%;background:rgba(245,196,0,.14);pointer-events:none}
-.eng{display:flex;align-items:center;gap:8px;padding:9px 11px;border:1px solid var(--line);border-radius:11px;cursor:pointer;background:#0c0c0c;transition:border-color .1s}
-.eng:hover{border-color:#444}.eng.on{border-color:var(--gold);background:#1a1600;box-shadow:inset 0 0 0 1px rgba(245,196,0,.25)}.eng b{color:#fff;min-width:58px}
-.badge{font-size:10px;padding:2px 7px;border-radius:999px;background:#222;color:#bbb}.badge.dev{background:#0a3d1a;color:#7ee2a0}.badge.lap{background:#1b2a4a;color:#8fb8ff}.badge.down{background:#4a1b1b;color:#ff9d9d}
-.side{display:grid;grid-template-columns:1fr 1fr;gap:10px}.side>div{background:#0c0c0c;border:1px solid var(--line);border-radius:12px;padding:12px}
-.side h4{margin:0 0 8px 0;font-size:12px;color:#aaa;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
-#scoreInfo,#summary,#engineNote{color:#a8a8a8;font-size:13px;line-height:1.5}
-hr{border:0;border-top:1px solid var(--line);margin:14px 0}
-@media (max-width:1000px){main{grid-template-columns:1fr}#lanes{height:60vh}}
-</style></head><body>
-<header><h1>Thaa<span>lam</span></h1>
-<div class="tabs"><button id="tFree" class="on">Free flow · <span class="ml">സ്വതന്ത്രം</span></button><button id="tLearn">Learn · <span class="ml">പഠിക്കൂ</span></button><button id="tPractice">Practice · <span class="ml">പരിശീലനം</span></button></div>
-<span id="status"></span>
-<div class="pills"><span class="pill gold" id="pillEngine">Gemma · …</span><span class="pill plain" id="pillAudio">🔊 …</span><span class="pill plain" id="pillKeys" title="SPACE=thumb (or IMU) · J K L ; = index→pinky">⌨ SPACE J K L ;</span></div></header>
-<main>
-<section id="lanes">
-  <div id="hint">Press <b>Start tempo</b> and play with <b>SPACE J K L ;</b> — or <b>Learn</b> a track<span class="ml">താളം തുടങ്ങൂ, അല്ലെങ്കിൽ ഒരു താളം പഠിക്കൂ</span></div>
-  <div id="judge"></div><div id="stats"><b id="pts">0</b> pts · streak <span id="streak">0</span></div>
-  <div class="hitline"></div><div class="pad" id="pad"></div>
-  <div id="overlay"><div class="box"><div class="stars" id="ovStars">☆☆☆</div><div class="big" id="ovPts">0</div><div id="ovLine" style="color:#ddd"></div><small id="ovSub"></small></div></div>
-</section>
-<aside>
-  <div class="card" id="cFree"><h3>Free flow · <span class="ml">സ്വതന്ത്രമായി വായിക്കൂ</span></h3>
-    <label>Instrument</label><select id="kit"></select>
-    <label>Tempo (bpm) <span id="bpmv">90</span></label><input id="bpm" type="range" min="40" max="200" value="90">
-    <label>Cycle beats</label><select id="cycle"><option>4</option><option>6</option><option>7</option><option selected>8</option><option>14</option></select>
-    <label>Tempo on fingers</label><select id="click"><option value="walk">walk thumb→pinky</option><option value="all">all fingers</option><option value="downbeat">downbeat only</option></select>
-    <button class="primary" id="goFree">Start tempo · താളം തുടങ്ങൂ</button><button class="ghost" id="stop">Stop · നിർത്തൂ</button></div>
-  <div class="card hidden" id="cLearn"><h3>Learn a track · <span class="ml">ഒരു താളം പഠിക്കൂ</span></h3>
-    <label>Audio (mp3/wav)</label><input type="file" id="file" accept="audio/*"><button class="primary" id="upload">Analyze with Gemma · വിശകലനം ചെയ്യൂ</button>
-    <hr><label>…or compose with Gemini</label><input id="brief" placeholder="playful Onam melam, builds to a kalasham">
-    <select id="ckit"></select><button class="ghost" id="compose">Compose · രചിക്കൂ</button>
-    <hr><label>…or type a vaaythari phrase</label><input id="phraseText" placeholder="dhim tha ka ta ki" value="dhim tha ka ta ki"><button class="ghost" id="loadPhrase">Load phrase</button>
-    <div id="scoreInfo" style="margin-top:10px;color:#bbb;font-size:13px"></div></div>
-  <div class="card hidden" id="cPractice"><h3>Practice · <span class="ml">പരിശീലനം</span></h3>
-    <label>Phrase</label><select id="phrase"><option value="">whole piece</option></select>
-    <label>Speed</label><select id="speed"><option value="0.6">60%</option><option value="0.8">80%</option><option value="1" selected>100%</option></select>
-    <button class="ghost" id="goListen">▶ Listen · കേൾക്കൂ</button>
-    <button class="primary" id="goPractice">Play · വായിക്കൂ</button><button class="ghost" id="stop2">Stop · നിർത്തൂ</button>
-    <div id="summary" style="margin-top:10px;color:#bbb;font-size:13px"></div></div>
-  <div class="card" id="cEngine"><h3>Gemma engine <span class="ml" style="font-size:12px">· ഏത് ജെമ്മ?</span></h3>
-    <div id="engines" style="display:flex;flex-direction:column;gap:6px;font-size:13px"></div>
-    <div id="engineNote" style="color:#777;font-size:12px;margin-top:6px"></div></div>
-  <div class="card"><h3>Ashaan says · <span class="ml">ആശാൻ പറയുന്നു</span></h3><div class="ashaan"><div class="avatar ml">ആ</div><div id="coach" class="mlbig" style="flex:1">—</div></div></div>
-</aside></main>
-<script>
-const COLORS=["#ff3b30","#ff9500","#ffd60a","#34c759","#0a84ff"],NAMES=["thumb","index","middle","ring","pinky"],NAMES_ML=["തള്ളവിരൽ","ചൂണ്ടുവിരൽ","നടുവിരൽ","മോതിരവിരൽ","ചെറുവിരൽ"];
-const KEYS={" ":0,"j":1,"k":2,"l":3,";":4};
-let ws,state={},score=null,play=null,fmap={names:NAMES,syllables:["","","","",""]};
-const $=s=>document.querySelector(s);
-const KEYLBL=["SPACE","J","K","L",";"];
-function pad(){$("#pad").innerHTML=NAMES.map((n,i)=>`<div id="p${i}" style="border-color:${COLORS[i]};color:${COLORS[i]}"><span class="key">${KEYLBL[i]}</span><b>${fmap.names[i]||n}</b><small>${fmap.syllables[i]||"—"}</small><span class="mln ml">${NAMES_ML[i]}</span></div>`).join("");
- for(let i=0;i<5;i++){const l=document.createElement("div");l.className="lane";l.style.left=(i*20)+"%";$("#lanes").prepend(l);}}
-function flash(i){const p=$("#p"+i);if(!p)return;p.classList.add("hit");setTimeout(()=>p.classList.remove("hit"),80);}
-function judge(t,c){const j=$("#judge");j.textContent=t;j.style.color=c;j.style.opacity=1;setTimeout(()=>j.style.opacity=0,300);}
-function connect(){ws=new WebSocket(`ws://${location.host}/ws`);ws.onmessage=e=>{const m=JSON.parse(e.data);
- if(m.type==="strike"){$("#hint").style.display="none";flash(m.finger);if(m.judge==="auto"){markNote(m.note,"auto");}else if(m.judge){const map={perfect:["PERFECT · കൃത്യം","#34c759"],good:["GOOD · നല്ലത്","#ffd60a"],late:["LATE · വൈകി","#ff9500"],early:["EARLY · നേരത്തെ","#ff9500"],wrong_finger:["WRONG FINGER · തെറ്റായ വിരൽ","#ff3b30"],extra:["—","#666"]};judge(...map[m.judge]);$("#pts").textContent=m.points;$("#streak").textContent=m.streak;if(m.note!=null)markNote(m.note,m.judge);}}
- else if(m.type==="click"){$("#hint").style.display="none";const c=document.createElement("div");c.className="click";c.style.left=(m.finger*20)+"%";c.style.background=m.down?"rgba(255,214,10,.35)":"rgba(255,255,255,.08)";$("#lanes").appendChild(c);setTimeout(()=>c.remove(),120);}
- else if(m.type==="score"){setScore(m.score);const conf=m.confidence!=null?` · confidence ${Math.round(m.confidence*100)}%`:"";$("#scoreInfo").innerHTML=`${m.score.title} · ${m.score.thaalam} · ${m.score.notes.length} notes · ${Math.round(m.score.bpm)} bpm${conf}<br><span class="mlbig" style="font-size:14px">${m.summary_ml||""}</span><br><span class="en">${m.gemma||""}</span>`;$("#status").textContent=`${m.score.thaalam}${conf}`;$("#tPractice").click();}
- else if(m.type==="practice_start"){startPractice(m.score,m.lead_in_s);}
- else if(m.type==="miss"){m.notes.forEach(i=>markNote(i,"miss"));$("#streak").textContent=0;judge("MISS · വിട്ടുപോയി","#ff3b30");}
- else if(m.type==="practice_end"){play=null;const s=m.summary;$("#summary").innerHTML=`${"★".repeat(s.stars)}${"☆".repeat(3-s.stars)} &nbsp; ${Math.round(s.accuracy*100)}% · ${s.points} pts<br>perfect ${s.perfect} · good ${s.good} · miss ${s.misses} · wrong finger ${s.wrong_finger}`;
-   $("#ovStars").textContent="★".repeat(s.stars)+"☆".repeat(3-s.stars);$("#ovPts").textContent=s.points+" pts";$("#ovLine").textContent=`${Math.round(s.accuracy*100)}% · perfect ${s.perfect} · good ${s.good} · miss ${s.misses} · wrong ${s.wrong_finger}`;$("#ovSub").textContent=s.stars>=2?"കൊള്ളാം! · Ashaan is thinking…":"വീണ്ടും ശ്രമിക്കൂ · Ashaan is thinking…";$("#overlay").style.display="flex";setTimeout(()=>$("#overlay").style.display="none",3500);}
- else if(m.type==="coach"){const one=r=>`<div class="mlbig">${r.say_ml||""}</div><div class="en">${r.say_en||""}</div>${r.say_manglish?`<div class="en" style="color:#777;font-style:italic">${r.say_manglish}</div>`:""}${r.drill_phrase!=null?`<div style="color:#777;font-size:12px;margin-top:6px">drill: phrase ${(+r.drill_phrase)+1} @ ${Math.round(r.drill_bpm||0)} bpm</div>`:""}`;
-   const head=r=>`<h4><b>${r.engine||""}</b> <span class="badge ${r.on_device?"dev":"lap"}">${r.on_device?"on-device":"laptop"}</span> <span class="badge">${r.model||""}</span> <span class="badge">${r.seconds!=null?r.seconds+" s":""}</span></h4>`;
-   if(m.results&&m.results.length>1){$("#coach").innerHTML=`<div class="side">${m.results.map(r=>`<div>${head(r)}${one(r)}</div>`).join("")}</div>`;}
-   else{$("#coach").innerHTML=`${m.engine?head(m):""}${one(m)}`;}}
- else if(m.type==="status"){$("#status").textContent=m.text;}
- else if(m.type==="kit"){$("#status").textContent="kit: "+m.kit;}};ws.onclose=()=>setTimeout(connect,800);}
-document.addEventListener("keydown",e=>{if(e.repeat)return;const k=e.key.toLowerCase();if(k in KEYS||e.key===" "){e.preventDefault();ws.send(JSON.stringify({type:"key",key:e.key===" "?" ":k,v:.9}));}});
-// falling notes
-let notesEl=[];function setScore(s){score=s;fmap=s.finger_map;pad();const ph=$("#phrase");ph.innerHTML='<option value="">whole piece</option>'+(s.phrases||[]).map((p,i)=>`<option value="${i}">phrase ${i+1} (beats ${p[0]}–${p[1]})</option>`).join("");}
-function startPractice(s,lead){$("#overlay").style.display="none";$("#hint").style.display="none";score=s;fmap=s.finger_map;pad();$("#pts").textContent=0;$("#streak").textContent=0;notesEl.forEach(n=>n.remove());notesEl=[];
- const t0=performance.now()+lead*1000,beat=60000/s.bpm;play={t0,beat};
- s.notes.forEach((n,i)=>{const el=document.createElement("div");el.className="note";el.style.left=(n.finger*20+2)+"%";el.style.background=COLORS[n.finger];el.dataset.t=t0+n.beat*beat;el.textContent=(n.label||"").toUpperCase();el.title=n.label;$("#lanes").appendChild(el);notesEl.push(el);});requestAnimationFrame(anim);}
-function markNote(i,v){const el=notesEl[i];if(!el)return;if(v==="auto"){el.style.boxShadow="0 0 12px #fff";setTimeout(()=>el.style.opacity=.25,120);return;}el.style.opacity=.25;if(v==="miss"||v==="wrong_finger")el.style.background="#333";}
-function anim(){if(!play)return;const now=performance.now(),H=$("#lanes").clientHeight-70,speed=H/2000;
- notesEl.forEach(el=>{const dt=+el.dataset.t-now;const y=H-dt*speed;el.style.top=(y-9)+"px";el.style.display=(y<-20||y>H+40)?"none":"flex";});requestAnimationFrame(anim);}
-// controls
-fetch("/api/state").then(r=>r.json()).then(s=>{state=s;for(const id of["kit","ckit"]){$("#"+id).innerHTML=Object.entries(s.kits).map(([k,v])=>`<option value="${k}" ${k===s.kit?"selected":""}>${v.name}</option>`).join("");}if(s.score)setScore(s.score);if(s.dry)$("#status").textContent="dry mode (no GPIO)";});
-$("#bpm").oninput=e=>$("#bpmv").textContent=e.target.value;
-$("#kit").onchange=e=>ws.send(JSON.stringify({type:"kit",kit:e.target.value}));
-$("#goFree").onclick=()=>ws.send(JSON.stringify({type:"free",bpm:+$("#bpm").value,cycle:+$("#cycle").value,click:$("#click").value}));
-$("#stop").onclick=$("#stop2").onclick=()=>{ws.send(JSON.stringify({type:"stop"}));play=null;};
-$("#upload").onclick=async()=>{const f=$("#file").files[0];if(!f)return;const fd=new FormData();fd.append("file",f);$("#status").textContent="uploading…";const r=await fetch("/api/learn",{method:"POST",body:fd});const j=await r.json();$("#status").textContent=j.ok?`learned ${j.notes} notes · ${j.thaalam}`:"error: "+j.error;};
-$("#compose").onclick=async()=>{$("#status").textContent="Gemini composing…";const r=await fetch("/api/compose",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({brief:$("#brief").value,kit:$("#ckit").value,cycles:4,bpm:+$("#bpm").value})});const j=await r.json();$("#status").textContent=j.ok?`composed ${j.notes} notes`:"error: "+j.error;};
-$("#loadPhrase").onclick=()=>ws.send(JSON.stringify({type:"phrase",text:$("#phraseText").value,bpm:+$("#bpm").value,cycles:2}));
-$("#goListen").onclick=()=>ws.send(JSON.stringify({type:"listen",phrase:$("#phrase").value===""?null:+$("#phrase").value,speed:+$("#speed").value}));
-$("#goPractice").onclick=()=>ws.send(JSON.stringify({type:"practice",phrase:$("#phrase").value===""?null:+$("#phrase").value,speed:+$("#speed").value}));
-for(const [t,c] of [["tFree","cFree"],["tLearn","cLearn"],["tPractice","cPractice"]]){$("#"+t).onclick=()=>{document.querySelectorAll(".tabs button").forEach(b=>b.classList.remove("on"));$("#"+t).classList.add("on");["cFree","cLearn","cPractice"].forEach(x=>$("#"+x).classList.toggle("hidden",x!==c));};}
-async function loadEngines(){try{const g=await (await fetch("/api/gemma")).json();const modes=[...g.engines.map(e=>e.engine)];if(g.engines.length>1)modes.push("both");
- $("#engines").innerHTML=modes.map(mo=>{const e=g.engines.find(x=>x.engine===mo);const on=g.mode===mo;
-  const badges=e?`<span class="badge ${e.on_device?"dev":"lap"}">${e.on_device?"on-device":"laptop"}</span><span class="badge ${e.ok?"":"down"}">${e.model}${e.ok?(e.loaded&&e.loaded.includes(e.model)?" · loaded":""):" · unreachable"}</span>`:`<span class="badge">side by side</span>`;
-  return `<div class="eng ${on?"on":""}" data-mode="${mo}"><b>${mo==="both"?"Both":mo}</b>${badges}</div>`;}).join("");
- document.querySelectorAll(".eng").forEach(el=>el.onclick=async()=>{await fetch("/api/gemma/select",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({mode:el.dataset.mode})});loadEngines();});
- $("#engineNote").textContent=g.mode==="both"?"Coaching runs on every engine in parallel — compare answers and speed.":`Learn, coach, game and compose use “${g.mode}”.`;
- $("#pillEngine").textContent=g.mode==="both"?"Gemma · both engines":`Gemma · ${g.model}${g.on_device?" · on-device":" · laptop"}`;
- const st=await (await fetch("/api/state")).json();$("#pillAudio").textContent="🔊 "+(st.audio_device||"no audio");}catch(e){$("#engineNote").textContent="engine status unavailable";}}
-pad();connect();loadEngines();setInterval(loadEngines,15000);
-</script></body></html>
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Thaalam</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%2714%27 fill=%27%23f5c400%27/%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%276%27 fill=%27%230a0a0a%27/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700&family=Noto+Sans+Malayalam:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css">
+<script type="importmap">
+{ "imports": {
+    "three": "https://unpkg.com/three@0.180.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.180.0/examples/jsm/"
+} }
+</script>
+</head><body>
+
+<svg style="display:none" aria-hidden="true">
+  <symbol id="i-free" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M2 6c.6-1 1.7-2 3.5-2s3 1.5 4.5 1.5S13 4 14.5 4 17.5 5.5 19 5.5s2.9-1 3.5-2"/>
+    <path d="M2 12c.6-1 1.7-2 3.5-2s3 1.5 4.5 1.5S13 10 14.5 10 17.5 11.5 19 11.5s2.9-1 3.5-2"/>
+    <path d="M2 18c.6-1 1.7-2 3.5-2s3 1.5 4.5 1.5S13 16 14.5 16 17.5 17.5 19 17.5s2.9-1 3.5-2"/>
+  </symbol>
+  <symbol id="i-learn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 3v12"/><path d="m7 8 5-5 5 5"/><path d="M5 21h14a2 2 0 0 0 2-2v-3H3v3a2 2 0 0 0 2 2Z"/>
+  </symbol>
+  <symbol id="i-practice" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>
+  </symbol>
+  <symbol id="i-about" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="9"/><path d="M12 16v-5"/><path d="M12 8h.01"/>
+  </symbol>
+  <symbol id="i-asan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="9" r="4"/><path d="M4 20c1.5-3.5 4.5-5 8-5s6.5 1.5 8 5"/><path d="M8 9c1-2 2.5-3 4-3s3 1 4 3"/>
+  </symbol>
+  <symbol id="i-panel" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/>
+  </symbol>
+</svg>
+
+<header id="top">
+  <div class="wordmark">Thaa<span>lam</span></div>
+  <span class="badge gold" id="mode">free</span>
+  <span class="badge" id="rig">…</span>
+  <span id="status"></span>
+  <div class="spacer"></div>
+  <button id="asanBtn" class="icon-btn" aria-label="Ask Asan" title="Asan · ആശാൻ"><svg><use href="#i-asan"/></svg></button>
+  <button id="panelToggle" class="icon-btn" aria-label="toggle panel" title="toggle panel"><svg><use href="#i-panel"/></svg></button>
+</header>
+
+<div id="app">
+  <nav id="rail">
+    <button data-sec="free" class="rail-btn on"><svg><use href="#i-free"/></svg><span class="ml">സ്വതന്ത്രം</span></button>
+    <button data-sec="learn" class="rail-btn"><svg><use href="#i-learn"/></svg><span class="ml">പഠിക്കൂ</span></button>
+    <button data-sec="practice" class="rail-btn"><svg><use href="#i-practice"/></svg><span class="ml">പരിശീലനം</span></button>
+    <button data-sec="about" class="rail-btn"><svg><use href="#i-about"/></svg><span class="ml">വിവരം</span></button>
+  </nav>
+
+  <section id="panel">
+    <div class="panel-sec" data-sec="free" id="secFree">
+      <h3>Free flow · <span class="ml">സ്വതന്ത്രമായി വായിക്കൂ</span></h3>
+      <label>Instrument</label><select id="kit"></select>
+      <label>Tempo (bpm) <span id="bpmv">90</span></label><input id="bpm" type="range" min="40" max="200" value="90">
+      <label>Cycle beats</label><select id="cycle"><option>4</option><option>6</option><option>7</option><option selected>8</option><option>14</option></select>
+      <label>Tempo on fingers</label><select id="click"><option value="walk">walk thumb→pinky</option><option value="all">all fingers</option><option value="downbeat">downbeat only</option></select>
+      <button class="primary" id="goFree">Start tempo · താളം തുടങ്ങൂ</button>
+      <button class="ghost" id="stop">Stop · നിർത്തൂ</button>
+    </div>
+
+    <div class="panel-sec hidden" data-sec="learn" id="secLearn">
+      <h3>Learn a track · <span class="ml">ഒരു താളം പഠിക്കൂ</span></h3>
+      <label>Audio (mp3/wav)</label><input type="file" id="file" accept="audio/*">
+      <button class="primary" id="upload">Analyze with Gemma · വിശകലനം ചെയ്യൂ</button>
+      <hr><label>…or compose with Gemini</label><input id="brief" placeholder="playful Onam melam, builds to a kalasham">
+      <select id="ckit"></select><button class="ghost" id="compose">Compose · രചിക്കൂ</button>
+      <hr><label>…or type a vaaythari phrase</label><input id="phraseText" placeholder="dhim tha ka ta ki" value="dhim tha ka ta ki">
+      <button class="ghost" id="loadPhrase">Load phrase</button>
+      <div id="scoreInfo"></div>
+    </div>
+
+    <div class="panel-sec hidden" data-sec="practice" id="secPractice">
+      <h3>Practice · <span class="ml">പരിശീലനം</span></h3>
+      <label>Phrase</label><select id="phrase"><option value="">whole piece</option></select>
+      <label>Speed</label><select id="speed"><option value="0.6">60%</option><option value="0.8">80%</option><option value="1" selected>100%</option></select>
+      <button class="ghost" id="goListen">▶ Listen · കേൾക്കൂ</button>
+      <button class="primary" id="goPractice">Play · വായിക്കൂ</button>
+      <button class="ghost" id="stop2">Stop · നിർത്തൂ</button>
+      <hr>
+      <label>Kaalam ladder <span class="ml">· കാലം ഗോവണി</span></label>
+      <button class="ghost" id="goLadder">Start ladder · 0.6× → 0.8× → 1.0× → 2.0×</button>
+      <div id="ladderInfo"></div>
+      <div id="summary"></div>
+    </div>
+
+    <div class="panel-sec hidden" data-sec="about" id="secAbout">
+      <div class="block about">
+        <h3>Thaalam <span class="ml">· ആശാൻ</span></h3>
+        <p>Onam-focused Kerala chenda vaaythari learning coach — five-finger air-percussion practice with real-time judging, Gemma coaching, and a kaalam tempo ladder.</p>
+        <p class="team">Team: Ryyan Safar (AI/ML) · Adriel Bobby (backend + UI) · Fathima Moonam Kandathil (hardware)</p>
+      </div>
+      <div class="block">
+        <h3>Gemma engine <span class="ml">· ഏത് ജെമ്മ?</span></h3>
+        <div id="engines"></div>
+        <div id="engineNote"></div>
+      </div>
+    </div>
+  </section>
+
+  <main id="stage">
+    <canvas id="gl"></canvas>
+    <div id="zones"></div>
+    <div id="track">
+      <div class="hitline"></div>
+    </div>
+    <div id="hint">Press <b>Start tempo</b> and play with <b>SPACE J K L ;</b> — or <b>Learn</b> a track<span class="ml">താളം തുടങ്ങൂ, അല്ലെങ്കിൽ ഒരു താളം പഠിക്കൂ</span></div>
+    <div id="judge"></div>
+    <div id="stats"><b id="pts">0</b> pts · streak <span id="streak">0</span></div>
+    <div id="hud"></div>
+    <div id="verdict"><div class="box">
+      <div class="stars" id="vStars">☆☆☆</div><div class="big" id="vPts">0</div>
+      <div id="vLine"></div><small id="vSub"></small>
+      <div id="vMotion" class="motion hidden"></div>
+    </div></div>
+    <div id="loading"><div class="spin"></div><span>loading stage… <span class="ml">കാത്തിരിക്കൂ</span></span></div>
+    <div id="asan" role="status" aria-live="polite">
+      <div class="avatar ml" title="Asan">ആ</div>
+      <div id="asanBody">—</div>
+      <button id="asanClose" aria-label="Dismiss">✕</button>
+    </div>
+  </main>
+</div>
+
+<footer id="foot"></footer>
+
+<script type="module" src="/static/app.js"></script>
+</body></html>

@@ -46,8 +46,8 @@ KIT_PARAMS = {
         (95,  1.2, CHENDA_VALANTHALA, 0.25, 0.012, 0.35, 0.4),    # valanthala – deep bass head
         (330, 0.5, CHENDA_IDANTHALA,  0.30, 0.008, 0.25, 0.6),    # idanthala open – bright, ringing
         (520, 0.22, CHENDA_IDANTHALA, 0.45, 0.006, 0.15, 0.8),    # idanthala closed – damped, crack
-        (900, 0.12, ((1.0, 1.0, 0.04), (2.3, 0.6, 0.02)), 0.8, 0.004, 0.0, 1.0),   # rim / stick on edge
-        (2400, 0.9, ((1.0, 1.0, 0.7), (2.7, 0.5, 0.5), (4.1, 0.3, 0.35), (6.3, 0.15, 0.2)), 0.35, 0.003, 0.0, 0.5),  # elathalam – cymbal-like
+        (600, 0.11, ((1.0, 1.0, 0.05), (2.3, 0.45, 0.025)), 0.5, 0.005, 0.05, 0.55),  # rim / stick on edge — wood, not a beep
+        (200, 0.15, CHENDA_VALANTHALA, 0.22, 0.006, 0.18, 0.35, 6),  # roll – 6 rapid low strokes on the head
     ],
     "mridangam": [
         (78,  1.4, MRIDANGAM_THOM, 0.08, 0.010, 0.6, 0.2),        # thom – gliding bass
@@ -73,8 +73,30 @@ KIT_PARAMS = {
 }
 
 
-def _drum(*p) -> np.ndarray:
-    return _modal_drum(*p)
+def _roll(f0: float, dur: float, modes, noise: float, noise_dur: float, pitch_drop: float,
+          click: float, strokes: int) -> np.ndarray:
+    """A chenda roll is many rapid strokes on the head, not one long ring-out. Layer short
+    damped strokes ~28 ms apart with slight timing/level unevenness so it reads as a hand
+    roll rather than a machine tremolo."""
+    stroke = _modal_drum(f0, dur, modes, noise, noise_dur, pitch_drop, click)
+    gap = int(SR * 0.028)
+    n = gap * (strokes - 1) + len(stroke)
+    out = np.zeros(n, dtype=np.float32)
+    rng = np.random.default_rng(7)
+    for k in range(strokes):
+        i = max(0, k * gap + int(rng.integers(-90, 90)))          # human unevenness
+        amp = 0.55 + 0.45 * (1 - k / max(1, strokes - 1))          # slight decrescendo
+        seg = stroke[: n - i]
+        out[i : i + len(seg)] += seg * amp
+    out /= max(1e-6, np.abs(out).max())
+    return out.astype(np.float32)
+
+
+def _drum(f0, dur, modes, noise=0.2, noise_dur=0.01, pitch_drop=0.0, click=0.3, strokes=0) -> np.ndarray:
+    """strokes > 0 renders a roll of that many strokes; 0 (the default) a single hit."""
+    if strokes:
+        return _roll(f0, dur, modes, noise, noise_dur, pitch_drop, click, strokes)
+    return _modal_drum(f0, dur, modes, noise, noise_dur, pitch_drop, click)
 
 
 def render_kit_preview(kit: str, path: str, bpm: float = 100) -> None:
