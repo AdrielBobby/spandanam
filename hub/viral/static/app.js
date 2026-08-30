@@ -358,7 +358,7 @@ $("#goLadder").onclick = () => ws.send(JSON.stringify({ type: "ladder", phrase: 
 const MODEL_URL = "/assets/models/chenda/Chenda.glb";
 let renderer = null, scene, camera, controls, drumGroup, zoneMeshes = [], labelEls = [], raycaster, has3D = false;
 let zoneRadius = 0.05, modelScale = 1, laneH = 1;   // all re-derived from the real model in onModelLoaded
-let noteMeshes = [], noteGeo = null;
+let noteMeshes = [], noteGeo = null, trailGeo = null, trailTex = null;
 const ripples = []; // {mesh, t0}
 let shakeVel = 0, shakeAmt = 0;
 
@@ -514,6 +514,13 @@ function onModelLoaded(gltf) {
   });
   noteGeo = new THREE.CylinderGeometry(zoneRadius * 0.8, zoneRadius * 0.8, headR * 0.05, 24);
 
+  // Comet trail behind each note. A canvas gradient (solid at the head, transparent at the
+  // tail) painted on an open-ended cylinder — no custom shader needed, and one texture is
+  // shared by every note. Additive blending makes it read as light rather than plastic.
+  trailTex = makeTrailTexture();
+  trailGeo = new THREE.CylinderGeometry(zoneRadius * 0.5, zoneRadius * 0.78, 1, 20, 1, true);
+  trailGeo.translate(0, 0.5, 0);            // pivot at the bottom, so scale.y grows it upward
+
   // Frame the playfield now that the REAL head radius and lane height are known (doing this
   // off the raw bounding box sized the shot to the ropes, not the drum). Fit the taller of
   // the head and the lane runway, and look a little way up the lanes so notes are visible
@@ -622,22 +629,47 @@ function updateZones(now) {
   });
 }
 // ── Synthesia-style 3D falling notes ────────────────────────────────────
+// Vertical gradient: opaque at the note, fading to nothing up the tail. Texture row 0 is
+// the top of the cylinder (three.js flips Y by default), so stop 0 is the transparent end.
+function makeTrailTexture() {
+  const c = document.createElement("canvas");
+  c.width = 4; c.height = 64;
+  const g = c.getContext("2d"), grad = g.createLinearGradient(0, 0, 0, 64);
+  grad.addColorStop(0.0, "rgba(255,255,255,0)");
+  grad.addColorStop(0.55, "rgba(255,255,255,0.35)");
+  grad.addColorStop(1.0, "rgba(255,255,255,1)");
+  g.fillStyle = grad; g.fillRect(0, 0, 4, 64);
+  return new THREE.CanvasTexture(c);
+}
 function clear3DNotes() {
-  noteMeshes.forEach((m) => m && drumGroup.remove(m));
+  noteMeshes.forEach((g) => {
+    if (!g) return;
+    drumGroup.remove(g);
+    g.children.forEach((c) => c.material.dispose());
+  });
   noteMeshes = [];
 }
 function build3DNotes(s) {
   if (!has3D || !noteGeo) return;
   clear3DNotes();
+  const trailLen = laneH * 0.16;
   noteMeshes = s.notes.map((n) => {
     const zone = zoneMeshes[n.finger];
     if (!zone) return null;
-    const m = new THREE.Mesh(noteGeo, new THREE.MeshBasicMaterial({
-      color: COLORS[n.finger], transparent: true, opacity: 0.95 }));
-    m.position.copy(zone.position);
-    m.visible = false;
-    drumGroup.add(m);
-    return m;
+    const g = new THREE.Group();
+    const puckMat = new THREE.MeshBasicMaterial({ color: COLORS[n.finger], transparent: true, opacity: 0.95 });
+    g.add(new THREE.Mesh(noteGeo, puckMat));
+    const trailMat = new THREE.MeshBasicMaterial({
+      color: COLORS[n.finger], map: trailTex, transparent: true, opacity: 0.55,
+      side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending });
+    const trail = new THREE.Mesh(trailGeo, trailMat);
+    trail.scale.y = trailLen;                 // sits on the puck, streaks back up the lane
+    g.add(trail);
+    g.position.copy(zone.position);
+    g.visible = false;
+    g.userData = { puckMat, trailMat, trail, trailLen };
+    drumGroup.add(g);
+    return g;
   });
 }
 function update3DNotes(now) {
@@ -650,9 +682,14 @@ function update3DNotes(now) {
     if (dt > APPROACH_MS || dt < -260) { m.visible = false; continue; }
     const zone = zoneMeshes[n.finger];
     const f = Math.max(0, dt) / APPROACH_MS;          // 1 at spawn, 0 exactly on the beat
+    const u = m.userData;
     m.visible = true;
     m.position.set(zone.position.x, zone.position.y + f * laneH + zoneRadius * 0.2, zone.position.z);
-    m.material.opacity = dt < 0 ? Math.max(0, 1 + dt / 260) * 0.9 : 0.95;   // fade out just past the beat
+    const fadeIn = Math.min(1, (1 - f) * 6);          // ease in at spawn instead of popping
+    const fadeOut = dt < 0 ? Math.max(0, 1 + dt / 260) : 1;   // fade just past the beat
+    u.puckMat.opacity = 0.95 * fadeIn * fadeOut;
+    u.trailMat.opacity = 0.55 * fadeIn * fadeOut;
+    u.trail.scale.y = u.trailLen * Math.min(1, f * 4);  // trail collapses into the pad on landing
   }
 }
 
