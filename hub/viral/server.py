@@ -222,7 +222,20 @@ def create_app(cfg: Config) -> FastAPI:
     async def state():
         return {"mode": hub.mode, "bpm": hub.bpm, "cycle": hub.cycle, "kit": hub.sampler.kit, "kits": KITS, "keys": FINGER_KEYS, "labels_ml": LABELS_ML,
                 "audio_device": getattr(hub.sampler.mixer, "device_name", None),
+                "gemma": {"model": cfg.gemma_model, "ollama_url": cfg.ollama_url, "gemini_model": cfg.gemini_model},
                 "score": json.loads(hub.score.to_json()) if hub.score else None, "dry": cfg.dry}
+
+    @app.get("/api/gemma")
+    async def gemma_status():
+        """Proof-of-life for judges: which Gemma, where, is it up, is it loaded."""
+        try:
+            tags = (await hub.http.get(f"{cfg.ollama_url}/api/tags", timeout=4)).json().get("models", [])
+            ps = (await hub.http.get(f"{cfg.ollama_url}/api/ps", timeout=4)).json().get("models", [])
+            return {"ok": True, "model": cfg.gemma_model, "ollama_url": cfg.ollama_url,
+                    "available": [m["name"] for m in tags], "loaded": [m["name"] for m in ps],
+                    "on_device": "127.0.0.1" in cfg.ollama_url and ":11435" not in cfg.ollama_url}
+        except Exception as e:
+            return JSONResponse({"ok": False, "model": cfg.gemma_model, "ollama_url": cfg.ollama_url, "error": str(e)[:120]}, 503)
 
     @app.post("/api/audio/reopen")
     async def audio_reopen():
