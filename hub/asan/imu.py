@@ -19,7 +19,7 @@ class Stroke:
 
 def stroke_from_samples(t_s: float, mags_g: list[float], gravity_xyz: tuple[float, float, float],
                         threshold_g: float) -> Stroke | None:
-    if len(mags_g) < 2 or (mags_g[-1] - mags_g[-2]) < threshold_g:
+    if len(mags_g) < 2 or (max(mags_g) - 1.0) < threshold_g:   # window peak above the ~1 g rest
         return None
     gx, gy, gz = gravity_xyz
     tilt = math.degrees(math.atan2(gz, math.hypot(gx, gy))) if any((gx, gy, gz)) else 0.0
@@ -28,7 +28,7 @@ def stroke_from_samples(t_s: float, mags_g: list[float], gravity_xyz: tuple[floa
 
 class MPU6050Reader(threading.Thread):
     """Background reader; call .drain() to get strokes since last call. Dry-run yields nothing."""
-    ADDR, PWR, ACC = 0x68, 0x6B, 0x3B
+    ADDR, PWR, ACC, ACFG = 0x68, 0x6B, 0x3B, 0x1C
 
     def __init__(self, threshold_g: float, dry_run: bool = False):
         super().__init__(daemon=True)
@@ -39,6 +39,7 @@ class MPU6050Reader(threading.Thread):
         if not dry_run:
             from smbus2 import SMBus
             self._bus = SMBus(1); self._bus.write_byte_data(self.ADDR, self.PWR, 0)
+            self._bus.write_byte_data(self.ADDR, self.ACFG, 0x18)   # accel FS_SEL=3 => +/-16 g, matches the /2048 scale
 
     def _read_g(self) -> tuple[float, float, float]:
         d = self._bus.read_i2c_block_data(self.ADDR, self.ACC, 6)
@@ -48,13 +49,18 @@ class MPU6050Reader(threading.Thread):
     def run(self) -> None:
         if self.dry: return
         mags, grav, t0 = [], (0.0, 0.0, 1.0), time.monotonic()
+        last_t, armed = 0.0, True
         while True:
             x, y, z = self._read_g(); m = math.sqrt(x * x + y * y + z * z)
             if m < 1.3: grav = (x, y, z)           # quiet moment: remember gravity for tilt
             mags = (mags + [m])[-4:]
-            s = stroke_from_samples(time.monotonic() - t0, mags, grav, self.threshold)
-            if s and (not self._strokes or s.t_s - self._strokes[-1].t_s > 0.06):
+            now = time.monotonic() - t0
+            s = stroke_from_samples(now, mags, grav, self.threshold)
+            if s and armed and now - last_t > 0.12:     # one Stroke per hit: 120 ms refractory + re-arm
                 with self._lock: self._strokes.append(s)
+                last_t, armed = now, False
+            elif m < 1.0 + self.threshold * 0.4:        # settled back toward rest -> ready for the next hit
+                armed = True
             time.sleep(0.004)
 
     def drain(self) -> list[Stroke]:

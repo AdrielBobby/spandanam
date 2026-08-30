@@ -43,6 +43,6 @@ class Config:
     ollama_url: str = field(default_factory=lambda: os.environ.get("OLLAMA_URL", "http://127.0.0.1:11434"))
     gemma_model: str = field(default_factory=lambda: os.environ.get("GEMMA_MODEL", "gemma3n:e4b"))
     gemini_model: str = field(default_factory=lambda: os.environ.get("GEMINI_MODEL", "gemini-3.6-flash"))
-    imu_strike_g: float = 2.5
+    imu_strike_g: float = field(default_factory=lambda: float(os.environ.get("IMU_STRIKE_G", "1.5")))
     dry: bool = False
     gemma_engines: dict = field(default_factory=lambda: parse_engines(os.environ.get("GEMMA_ENGINES")))
