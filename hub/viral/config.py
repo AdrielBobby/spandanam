@@ -16,8 +16,11 @@ KITS = {
     "kit":       {"name": "Drum kit",  "voices": ["kick", "snare", "hihat", "tom", "ride"]},
 }
 
-# Hit windows (ms) like a rhythm game
-PERFECT_MS, GOOD_MS, MISS_MS = 40, 90, 180
+# Hit windows (ms) like a rhythm game. Humans on a laptop keyboard + browser render add ~30–60 ms of jitter,
+# so these are a little wider than a hardware controller would need.
+PERFECT_MS, GOOD_MS, MISS_MS = 60, 120, 220
+# Constant input latency to subtract from every strike (keyboard/USB/browser). Tune with INPUT_OFFSET_MS=… ; 0 = off.
+INPUT_OFFSET_MS = float(os.environ.get("INPUT_OFFSET_MS", "0"))
 
 
 def parse_engines(spec: str | None) -> dict[str, dict]:

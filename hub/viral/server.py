@@ -15,7 +15,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from . import judge
-from .config import FINGER_KEYS, KITS, Config
+from .config import FINGER_KEYS, INPUT_OFFSET_MS, KITS, Config
 from .events import Strike
 from .bridge import analysis_for_coach, analyze_attempt, phrase_to_score
 from .gemma_game import next_round
@@ -338,7 +338,7 @@ def create_app(cfg: Config) -> FastAPI:
                 m = json.loads(await sock.receive_text()); t = m.get("type")
                 if t == "key":
                     f = FINGER_KEYS.get(m.get("key", ""))
-                    if f is not None: await hub.on_strike(Strike(f, time.monotonic(), float(m.get("v", 0.8)), "key"))
+                    if f is not None: await hub.on_strike(Strike(f, time.monotonic() - INPUT_OFFSET_MS / 1000.0, float(m.get("v", 0.8)), "key"))
                 elif t == "free":
                     hub.ladder = None
                     hub.bpm = float(m.get("bpm", hub.bpm)); hub.cycle = int(m.get("cycle", hub.cycle)); hub.click_mode = m.get("click", hub.click_mode)
