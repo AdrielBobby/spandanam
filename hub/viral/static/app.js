@@ -146,11 +146,13 @@ function updateNotes(now) {
   });
 }
 
-// ── vaaythari karaoke chip: client-inferred from lead-in timing, no dedicated WS message ──
+// ── vaaythari karaoke ────────────────────────────────────────────────────
+// The chant is opt-in server-side (hub.karaoke). Only claim it in the HUD when it is
+// actually on, otherwise the chip announces a chant that never plays.
 let chantChipTimer = null;
 function scheduleKaraokeChip(leadInS) {
   clearHudChip("chant");
-  if (!leadInS || leadInS <= 0) return;
+  if (!leadInS || leadInS <= 0 || !$("#karaoke").checked) return;
   addHudChip("chant", "chant", "🎙 chant on");
   clearTimeout(chantChipTimer);
   chantChipTimer = setTimeout(() => clearHudChip("chant"), leadInS * 1000);
@@ -301,6 +303,7 @@ async function loadState() {
     $("#" + id).innerHTML = Object.entries(s.kits).map(([k, v]) => `<option value="${k}" ${k === s.kit ? "selected" : ""}>${v.name}</option>`).join("");
   }
   if (s.score) setScore(s.score);
+  $("#karaoke").checked = !!s.karaoke;          // reflect the server's real state on load/reconnect
   $("#rig").textContent = s.dry ? "dry · laptop" : "glove live";
   $("#rig").classList.toggle("down", !!s.dry);
 }
@@ -345,6 +348,7 @@ async function postCompose() {
 // ── control wiring ───────────────────────────────────────────────────
 $("#bpm").oninput = (e) => ($("#bpmv").textContent = e.target.value);
 $("#kit").onchange = (e) => ws.send(JSON.stringify({ type: "kit", kit: e.target.value }));
+$("#karaoke").onchange = (e) => ws.send(JSON.stringify({ type: "karaoke", on: e.target.checked }));
 $("#goFree").onclick = () => ws.send(JSON.stringify({ type: "free", bpm: +$("#bpm").value, cycle: +$("#cycle").value, click: $("#click").value }));
 $("#stop").onclick = $("#stop2").onclick = () => { ws.send(JSON.stringify({ type: "stop" })); play = null; ladder = null; clearHudChip("ladder"); setMode("idle"); };
 $("#upload").onclick = uploadLearn;
@@ -358,7 +362,7 @@ $("#goLadder").onclick = () => ws.send(JSON.stringify({ type: "ladder", phrase: 
 const MODEL_URL = "/assets/models/chenda/Chenda.glb";
 let renderer = null, scene, camera, controls, drumGroup, zoneMeshes = [], labelEls = [], raycaster, has3D = false;
 let zoneRadius = 0.05, modelScale = 1, laneH = 1;   // all re-derived from the real model in onModelLoaded
-let noteMeshes = [], noteGeo = null;
+let noteMeshes = [], noteGeo = null, trailGeo = null, trailTex = null;
 const ripples = []; // {mesh, t0}
 let shakeVel = 0, shakeAmt = 0;
 
@@ -514,6 +518,13 @@ function onModelLoaded(gltf) {
   });
   noteGeo = new THREE.CylinderGeometry(zoneRadius * 0.8, zoneRadius * 0.8, headR * 0.05, 24);
 
+  // Comet trail behind each note. A canvas gradient (solid at the head, transparent at the
+  // tail) painted on an open-ended cylinder — no custom shader needed, and one texture is
+  // shared by every note. Additive blending makes it read as light rather than plastic.
+  trailTex = makeTrailTexture();
+  trailGeo = new THREE.PlaneGeometry(zoneRadius * 1.5, 1);
+  trailGeo.translate(0, 0.5, 0);            // pivot at the bottom, so scale.y grows it upward
+
   // Frame the playfield now that the REAL head radius and lane height are known (doing this
   // off the raw bounding box sized the shot to the ropes, not the drum). Fit the taller of
   // the head and the lane runway, and look a little way up the lanes so notes are visible
@@ -622,22 +633,60 @@ function updateZones(now) {
   });
 }
 // ── Synthesia-style 3D falling notes ────────────────────────────────────
+// A trail has to be a soft-edged billboard, not geometry you can see the sides of. Alpha
+// falls off along the tail AND across the width, so there is no hard silhouette anywhere:
+// squared falloff across gives a feathered edge rather than a visible rectangle.
+function makeTrailTexture() {
+  const W = 32, H = 128;
+  const c = document.createElement("canvas"); c.width = W; c.height = H;
+  const g = c.getContext("2d"), img = g.createImageData(W, H);
+  for (let y = 0; y < H; y++) {
+    const along = Math.pow(y / (H - 1), 1.8);          // row 0 = tail (three.js flips Y)
+    for (let x = 0; x < W; x++) {
+      const u = (x / (W - 1)) * 2 - 1;                 // -1..1 across the width
+      const across = Math.max(0, 1 - u * u);
+      const i = (y * W + x) * 4;
+      img.data[i] = img.data[i + 1] = img.data[i + 2] = 255;
+      img.data[i + 3] = Math.round(along * across * across * 255);
+    }
+  }
+  g.putImageData(img, 0, 0);
+  const t = new THREE.CanvasTexture(c);
+  t.minFilter = THREE.LinearFilter;                     // no mip shimmer on a thin quad
+  return t;
+}
 function clear3DNotes() {
-  noteMeshes.forEach((m) => m && drumGroup.remove(m));
+  noteMeshes.forEach((g) => {
+    if (!g) return;
+    drumGroup.remove(g);
+    g.children.forEach((c) => c.material.dispose());
+  });
   noteMeshes = [];
 }
 function build3DNotes(s) {
   if (!has3D || !noteGeo) return;
   clear3DNotes();
+  const trailLen = laneH * 0.16;
   noteMeshes = s.notes.map((n) => {
     const zone = zoneMeshes[n.finger];
     if (!zone) return null;
-    const m = new THREE.Mesh(noteGeo, new THREE.MeshBasicMaterial({
-      color: COLORS[n.finger], transparent: true, opacity: 0.95 }));
-    m.position.copy(zone.position);
-    m.visible = false;
-    drumGroup.add(m);
-    return m;
+    const g = new THREE.Group();
+    const puckMat = new THREE.MeshBasicMaterial({ color: COLORS[n.finger], transparent: true, opacity: 0.95 });
+    g.add(new THREE.Mesh(noteGeo, puckMat));
+    const trailMat = new THREE.MeshBasicMaterial({
+      color: COLORS[n.finger], map: trailTex, transparent: true, opacity: 0.5,
+      side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending });
+    const trail = new THREE.Mesh(trailGeo, trailMat);
+    trail.scale.y = trailLen;                 // sits on the puck, streaks back up the lane
+    // Yaw the quad to face the camera. The camera is locked, and so is the lane, so this
+    // is a one-time turn rather than per-frame billboarding.
+    trail.rotation.y = Math.atan2(camera.position.x - zone.position.x, camera.position.z - zone.position.z);
+    g.add(trail);
+    g.position.copy(zone.position);
+    g.visible = false;
+    g.userData = { puckMat, trailMat, trail, trailLen };
+    drumGroup.add(g);
+    return g;
   });
 }
 function update3DNotes(now) {
@@ -650,9 +699,14 @@ function update3DNotes(now) {
     if (dt > APPROACH_MS || dt < -260) { m.visible = false; continue; }
     const zone = zoneMeshes[n.finger];
     const f = Math.max(0, dt) / APPROACH_MS;          // 1 at spawn, 0 exactly on the beat
+    const u = m.userData;
     m.visible = true;
     m.position.set(zone.position.x, zone.position.y + f * laneH + zoneRadius * 0.2, zone.position.z);
-    m.material.opacity = dt < 0 ? Math.max(0, 1 + dt / 260) * 0.9 : 0.95;   // fade out just past the beat
+    const fadeIn = Math.min(1, (1 - f) * 6);          // ease in at spawn instead of popping
+    const fadeOut = dt < 0 ? Math.max(0, 1 + dt / 260) : 1;   // fade just past the beat
+    u.puckMat.opacity = 0.95 * fadeIn * fadeOut;
+    u.trailMat.opacity = 0.55 * fadeIn * fadeOut;
+    u.trail.scale.y = u.trailLen * Math.min(1, f * 4);  // trail collapses into the pad on landing
   }
 }
 
