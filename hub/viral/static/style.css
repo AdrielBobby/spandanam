@@ -1,0 +1,262 @@
+/* Thaalam — dark UI in shadcn/ui "Luma" visual language:
+   neutral (not pure-black) ground, glass surfaces, soft elevation, one restrained
+   accent, a single radius scale. Hand-written CSS — no Tailwind/shadcn dependency. */
+
+:root{
+  /* tells the browser to render native widgets (dropdown popups, scrollbars, the file
+     picker button) dark — without it the <option> list paints white and inherits the
+     theme's white text, so the menu reads as blank */
+  color-scheme:dark;
+
+  /* ground + surfaces */
+  --bg:#0a0a0b;
+  --surface:rgba(255,255,255,.04);
+  --surface-2:rgba(255,255,255,.07);
+  --surface-3:rgba(255,255,255,.10);
+  --glass:rgba(20,20,23,.72);
+  --border:rgba(255,255,255,.10);
+  --border-strong:rgba(255,255,255,.16);
+
+  /* type */
+  --fg:#ededef;
+  --fg-muted:#a1a1aa;
+  --fg-subtle:#71717a;
+
+  /* accent (used sparingly: primary action, active state, hit line) */
+  --accent:#f5c400;
+  --accent-soft:rgba(245,196,0,.14);
+  --accent-ring:rgba(245,196,0,.35);
+  --green:#3ecf8e;
+  --red:#e5484d;
+
+  /* per-finger colours — shared with app.js COLORS[] and the 3D zones */
+  --c0:#ff453a;--c1:#ff9f0a;--c2:#ffd60a;--c3:#30d158;--c4:#0a84ff;
+
+  /* radius scale */
+  --r-sm:8px;
+  --r-md:12px;
+  --r-lg:16px;
+  --r-pill:999px;
+
+  /* elevation — large blur, low opacity */
+  --shadow-1:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.24);
+  --shadow-2:0 8px 40px rgba(0,0,0,.45);
+
+  /* layout */
+  --rail-w:60px;
+  --panel-w:330px;
+  --hit:104px;          /* hit line distance from stage bottom — app.js reads the
+                           element's real offset, so this stays the single source */
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);
+  font:15px/1.5 ui-sans-serif,system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+.ml,.mlbig,.mln{font-family:"Noto Sans Malayalam","Manjari",system-ui,sans-serif}
+.hidden{display:none!important}
+button{font:inherit;cursor:pointer}
+
+/* ── top bar ─────────────────────────────────────────────── */
+#top{display:flex;gap:12px;align-items:center;padding:10px 18px;
+  background:var(--glass);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);position:sticky;top:0;z-index:20}
+.wordmark{font-family:"Baloo 2",ui-sans-serif,system-ui;font-size:23px;font-weight:700;letter-spacing:-.4px}
+.wordmark span{color:var(--accent)}
+#top .spacer{flex:1}
+#status{color:var(--fg-subtle);font-size:12px}
+
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:500;
+  padding:4px 10px;border-radius:var(--r-pill);background:var(--surface);
+  border:1px solid var(--border);color:var(--fg-muted);text-transform:capitalize;white-space:nowrap}
+.badge::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--green)}
+.badge.gold{color:var(--accent);border-color:var(--accent-ring)}
+.badge.gold::before{background:var(--accent)}
+.badge.down::before{background:var(--red)}
+
+.icon-btn{width:32px;height:32px;display:flex;align-items:center;justify-content:center;
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);
+  color:var(--fg-muted);transition:background .12s,color .12s}
+.icon-btn:hover{background:var(--surface-2);color:var(--fg)}
+.icon-btn svg{width:16px;height:16px}
+
+/* ── layout ──────────────────────────────────────────────── */
+#app{display:grid;grid-template-columns:var(--rail-w) var(--panel-w) minmax(0,1fr);
+  gap:14px;padding:14px 18px;max-width:1760px;margin:0 auto;align-items:start}
+#app.collapsed{grid-template-columns:var(--rail-w) 0 minmax(0,1fr)}
+
+/* ── icon rail (minimal: no container chrome) ────────────── */
+#rail{display:flex;flex-direction:column;gap:2px}
+.rail-btn{display:flex;flex-direction:column;align-items:center;gap:4px;
+  padding:11px 4px;background:none;border:0;border-radius:var(--r-md);
+  color:var(--fg-subtle);font-weight:500;transition:background .12s,color .12s}
+.rail-btn svg{width:18px;height:18px}
+.rail-btn .ml{font-size:9px;line-height:1.2;text-align:center;opacity:.8}
+.rail-btn:hover{background:var(--surface);color:var(--fg-muted)}
+.rail-btn.on{background:var(--accent-soft);color:var(--accent)}
+
+/* ── side panel (glass card) ─────────────────────────────── */
+#panel{background:var(--glass);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;
+  box-shadow:var(--shadow-1);transition:opacity .15s}
+#app.collapsed #panel{opacity:0;padding:0;border:0;pointer-events:none}
+
+.panel-sec h3{margin:0 0 14px;font-family:"Baloo 2",ui-sans-serif,system-ui;
+  font-size:18px;font-weight:700;letter-spacing:-.2px;color:var(--fg);
+  display:flex;gap:8px;align-items:baseline}
+.panel-sec h3 .ml{font-size:12px;font-weight:400;color:var(--fg-subtle)}
+.panel-sec .block{margin-bottom:20px}
+
+label{display:block;margin-top:14px;font-size:12px;font-weight:500;color:var(--fg-muted)}
+input,select{width:100%;margin-top:6px;padding:9px 12px;font:inherit;font-size:14px;
+  background:var(--surface);color:var(--fg);border:1px solid var(--border);
+  border-radius:var(--r-md);transition:border-color .12s,box-shadow .12s}
+input:hover,select:hover{border-color:var(--border-strong)}
+input:focus,select:focus{outline:none;border-color:var(--accent-ring);box-shadow:0 0 0 3px var(--accent-soft)}
+input[type=range]{padding:0;height:26px;accent-color:var(--accent);background:none;border:0}
+input[type=file]{padding:7px 10px;font-size:13px;color:var(--fg-muted)}
+/* the popup list is painted by the OS, so it needs its own explicit colours */
+select option{background:#17171a;color:#ededef}
+select option:checked{background:#2a2410;color:var(--accent)}
+
+button.primary,button.ghost{width:100%;padding:10px 14px;border-radius:var(--r-md);
+  font-size:14px;font-weight:600;transition:background .12s,border-color .12s,transform .05s}
+button.primary{margin-top:16px;background:var(--accent);color:#1a1400;border:0}
+button.primary:hover{background:#ffd42e}
+button.ghost{margin-top:8px;background:transparent;color:var(--fg);border:1px solid var(--border)}
+button.ghost:hover{background:var(--surface-2);border-color:var(--border-strong)}
+button.primary:active,button.ghost:active{transform:translateY(1px)}
+
+hr{border:0;border-top:1px solid var(--border);margin:18px 0}
+#scoreInfo,#summary,#engineNote,#ladderInfo{margin-top:10px;font-size:13px;line-height:1.55;color:var(--fg-muted)}
+
+#engines{display:flex;flex-direction:column;gap:6px;font-size:13px}
+.eng{display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:var(--r-md);
+  background:var(--surface);border:1px solid var(--border);transition:background .12s,border-color .12s}
+.eng:hover{background:var(--surface-2)}
+.eng.on{border-color:var(--accent-ring);background:var(--accent-soft)}
+.eng b{color:var(--fg);min-width:56px;font-size:13px}
+.pill-badge{padding:2px 8px;border-radius:var(--r-pill);font-size:10px;font-weight:500;
+  background:var(--surface-2);color:var(--fg-muted)}
+.pill-badge.dev{background:rgba(62,207,142,.15);color:var(--green)}
+.pill-badge.lap{background:rgba(10,132,255,.15);color:#8fb8ff}
+.pill-badge.down{background:rgba(229,72,77,.15);color:#ff9d9d}
+.side{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.side>div{padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md)}
+.side h4{margin:0 0 8px;font-size:12px;color:var(--fg-muted);display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.about p{font-size:13px;line-height:1.65;color:var(--fg-muted)}
+.about .team{font-size:12px;color:var(--fg-subtle)}
+
+/* ── stage ───────────────────────────────────────────────── */
+#stage{position:relative;height:calc(100vh - 168px);min-height:520px;overflow:hidden;
+  background:#0d0d0f;border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-2)}
+#gl{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab;touch-action:none}
+#gl:active{cursor:grabbing}
+#zones{position:absolute;inset:0;pointer-events:none}
+#track{position:absolute;inset:0;pointer-events:none;z-index:4}
+
+/* #track is the FLAT view: gold hit line, falling notes, metronome flashes. Once the 3D
+   drum loads it takes over the visualisation, so the flat overlay is hidden wholesale —
+   otherwise the gold bar and the pale click rectangles float over the chenda. */
+#stage.has3d #track{display:none}
+
+/* the golden hit line — CSS owns its position; app.js reads the element's real
+   offset so notes always land exactly on it (no second hardcoded number). */
+.hitline{position:absolute;left:0;right:0;bottom:var(--hit);height:2px;
+  background:linear-gradient(90deg,transparent,var(--accent) 12%,var(--accent) 88%,transparent);
+  box-shadow:0 0 16px rgba(245,196,0,.4);opacity:.85}
+
+.note{position:absolute;top:0;width:15%;left:2.5%;height:26px;border-radius:var(--r-pill);
+  display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;
+  color:#0b0b0b;letter-spacing:.3px;will-change:transform;
+  box-shadow:0 0 12px rgba(255,255,255,.12),0 2px 10px rgba(0,0,0,.4)}
+.click{position:absolute;bottom:0;height:var(--hit);width:20%;background:var(--accent-soft);pointer-events:none}
+.label3d{position:absolute;transform:translate(-50%,-50%);pointer-events:none;z-index:6;
+  font-size:11px;font-weight:700;white-space:nowrap;text-shadow:0 2px 8px rgba(0,0,0,.9)}
+
+#hint{position:absolute;top:38%;left:0;right:0;text-align:center;z-index:2;
+  color:var(--fg-subtle);font-size:15px;pointer-events:none}
+#hint b{color:var(--fg-muted)}
+#hint .ml{display:block;margin-top:8px;font-size:14px;color:#52525b}
+#judge{position:absolute;top:24px;left:0;right:0;text-align:center;z-index:7;pointer-events:none;
+  font-size:38px;font-weight:700;letter-spacing:-.5px;opacity:0;transition:opacity .15s;
+  text-shadow:0 4px 24px rgba(0,0,0,.8)}
+#stats{position:absolute;top:16px;right:18px;z-index:7;pointer-events:none;
+  text-align:right;font-size:12px;color:var(--fg-muted)}
+#stats b{display:block;font-size:28px;font-weight:700;letter-spacing:-1px;color:var(--accent)}
+
+#hud{position:absolute;top:16px;left:18px;z-index:7;pointer-events:none;display:flex;gap:6px;flex-wrap:wrap}
+#hud .chip{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:var(--r-pill);
+  font-size:11px;font-weight:500;color:var(--fg-muted);
+  background:var(--glass);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border:1px solid var(--border)}
+#hud .chip.gold{color:var(--accent);border-color:var(--accent-ring)}
+#hud .chip.chant{color:var(--green);border-color:rgba(62,207,142,.3)}
+
+/* ── round verdict ───────────────────────────────────────── */
+#verdict{position:absolute;inset:0;z-index:9;display:none;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.5);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);text-align:center}
+#verdict .box{min-width:320px;padding:26px 32px;border-radius:var(--r-lg);
+  background:var(--glass);border:1px solid var(--border);box-shadow:var(--shadow-2)}
+#verdict .stars{font-size:40px;letter-spacing:6px;color:var(--accent);text-shadow:0 0 24px var(--accent-ring)}
+#verdict .big{margin:6px 0;font-size:30px;font-weight:700}
+#verdict #vLine{color:var(--fg-muted);font-size:14px}
+#verdict small{color:var(--fg-subtle)}
+#verdict .motion{margin-top:14px;padding:10px 12px;border-radius:var(--r-md);font-size:13px;
+  background:var(--surface);border:1px solid var(--border);color:var(--fg-muted)}
+#verdict .motion.motion-good{border-color:rgba(62,207,142,.3);box-shadow:0 0 20px rgba(62,207,142,.1);color:#a8f0c6}
+#verdict .motion.motion-flat{border-color:rgba(229,72,77,.3);box-shadow:0 0 20px rgba(229,72,77,.1);color:#ffb4b4}
+
+/* ── loading ─────────────────────────────────────────────── */
+#loading{position:absolute;inset:0;z-index:15;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:12px;background:#0d0d0f;
+  color:var(--fg-subtle);font-size:13px;transition:opacity .3s}
+#loading .spin{width:26px;height:26px;border-radius:50%;
+  border:2px solid var(--surface-3);border-top-color:var(--accent);animation:spin .9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#loading.fade{opacity:0;pointer-events:none}
+
+/* ── Asan coach snackbar ─────────────────────────────────── */
+#asan{position:absolute;left:50%;bottom:20px;z-index:12;width:min(580px,calc(100% - 36px));
+  display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-radius:var(--r-lg);
+  background:var(--glass);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border:1px solid var(--border);box-shadow:var(--shadow-2);
+  opacity:0;pointer-events:none;transform:translate(-50%,16px);
+  transition:opacity .22s ease,transform .22s cubic-bezier(.2,.8,.2,1)}
+#asan.show{opacity:1;pointer-events:auto;transform:translate(-50%,0)}
+.avatar{flex:none;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:15px;font-weight:700;color:#2a2000;background:linear-gradient(140deg,#ffe27a,#d4a300);
+  box-shadow:0 2px 12px rgba(245,196,0,.25)}
+#asanBody{flex:1;min-width:0;color:var(--fg-muted);white-space:pre-wrap}
+#asanBody .mlbig{font-size:15px;line-height:1.55;color:var(--fg)}
+#asanBody .en{margin-top:5px;font-size:13px;line-height:1.5;color:var(--fg-muted)}
+#asanBody h4{margin:0 0 6px;font-size:11px;font-weight:500;color:var(--fg-subtle);
+  display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+#asanClose{flex:none;width:24px;height:24px;display:flex;align-items:center;justify-content:center;
+  background:none;border:0;border-radius:var(--r-sm);color:var(--fg-subtle);font-size:15px;line-height:1;
+  transition:background .12s,color .12s}
+#asanClose:hover{background:var(--surface-2);color:var(--fg)}
+
+/* ── foot: finger chips ──────────────────────────────────── */
+#foot{display:flex;gap:8px;padding:0 18px 16px;max-width:1760px;margin:0 auto}
+#foot .fchip{flex:1;position:relative;padding:10px 6px;border-radius:var(--r-md);
+  display:flex;flex-direction:column;align-items:center;gap:1px;user-select:none;cursor:pointer;
+  background:var(--surface);border:1px solid var(--border);color:var(--fg-subtle);
+  transition:background .12s,border-color .12s,transform .06s,box-shadow .1s}
+#foot .fchip:hover{background:var(--surface-2);border-color:var(--border-strong)}
+#foot .fchip.hit{transform:scale(.96);border-color:currentColor;box-shadow:0 0 24px -4px currentColor}
+#foot .fchip b{font-size:14px;font-weight:600;color:var(--fg)}
+#foot .fchip small{font-size:12px;font-weight:600;color:var(--accent)}
+#foot .fchip .mln{font-size:11px;color:var(--fg-subtle)}
+#foot .fchip .key{position:absolute;top:5px;right:7px;padding:1px 5px;border-radius:5px;
+  font-size:9px;color:var(--fg-subtle);border:1px solid var(--border)}
+
+@media (max-width:1000px){
+  #app{grid-template-columns:1fr;padding:10px}
+  #rail{flex-direction:row;justify-content:center;order:1}
+  .rail-btn{flex:1}
+  .rail-btn .ml{display:none}
+  #panel{order:2}
+  #stage{order:3;height:56vh}
+  #foot{flex-wrap:wrap;padding:0 10px 12px}
+}

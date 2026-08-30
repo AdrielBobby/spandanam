@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import mimetypes
 import time
 from pathlib import Path
 
@@ -34,7 +35,8 @@ from . import speech
 
 log = logging.getLogger("viral")
 ROOT = Path(__file__).parent
-TRACKS = ROOT.parents[1] / "assets" / "tracks"
+ASSETS = ROOT.parents[1] / "assets"
+TRACKS = ASSETS / "tracks"
 
 
 def chantable_syllables(sc: Score) -> tuple[str, ...]:
@@ -233,6 +235,9 @@ class Hub:
 def create_app(cfg: Config) -> FastAPI:
     app = FastAPI(title="Thaalam"); hub = Hub(cfg)
     app.mount("/static", StaticFiles(directory=ROOT / "static"), name="static")
+    mimetypes.add_type("model/gltf-binary", ".glb")
+    ASSETS.mkdir(parents=True, exist_ok=True)
+    app.mount("/assets", StaticFiles(directory=ASSETS), name="assets")
 
     @app.on_event("startup")
     async def _up(): asyncio.create_task(hub.poll_imu()); await hub.start_free()
