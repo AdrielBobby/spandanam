@@ -28,3 +28,8 @@ def test_parse_round_enforces_level_target_and_novelty():
     assert parse_round(ok, 6) is None                                    # far too short for level 6
     assert parse_round(json.dumps({"phrase": ["tha", "tha", "tha"]}), 1) is None   # one finger only
     assert parse_round(ok, 2, previous=[["dhim", "tha", "ka", "ta"]]) is None      # repeat
+
+
+def test_small_model_detection():
+    from viral.gemma_thaalam import is_small_model
+    assert is_small_model("gemma3:1b") and is_small_model("gemma3n:e2b") and not is_small_model("gemma3n:e4b")

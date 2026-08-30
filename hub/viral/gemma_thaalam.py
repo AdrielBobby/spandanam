@@ -183,6 +183,15 @@ async def _chat(client: httpx.AsyncClient, url: str, model: str, system: str, us
 async def structure(client, url, model, bpm: float, profile: dict, events: list[tuple[float, int, float]],
                     wav: bytes | None, fallback: Structure, scores: dict[int, float] | None = None) -> Structure:
     dg = digest(bpm, profile, events, scores=scores)
+    if is_small_model(model):
+        # A 1B model on a Pi cannot reason over the digest reliably; use the deterministic evidence directly and be explicit about it.
+        from dataclasses import replace
+        guess = int(dg["best_cycle_guess"])
+        names_for_cycle = {3: "thakita/roopakam (3)", 4: "ekam (4)", 5: "khanda (5)", 6: "panchari (6)", 7: "thriputa/pandi (7)", 8: "chempada/adi (8)", 12: "panchari (12)", 14: "pandi (14)", 16: "chempada (16)"}
+        return replace(fallback, beats_per_cycle=guess, thaalam=names_for_cycle.get(guess, f"{guess}-beat cycle"),
+                       phrases=auto_phrases(max(fallback.phrases[-1][1] if fallback.phrases else guess, guess), guess),
+                       notes_en=f"cycle from periodicity evidence ({dg['evidence_strength']}); small on-device model ({model}) used for coaching only",
+                       evidence=f"periodicity {dg['cycle_periodicity']}", confidence=0.6 if dg["evidence_strength"] == "strong" else 0.4)
     guess = int(dg["best_cycle_guess"])
     user = (json.dumps({"digest": dg, "fingers": FINGERS}) +
             f'\nFill exactly this JSON (no events, no extra keys). beats_per_cycle defaults to the evidence-based guess {guess} unless you '
@@ -196,7 +205,29 @@ async def structure(client, url, model, bpm: float, profile: dict, events: list[
         log.warning("bad structure json: %s", e); return fallback
 
 
+def is_small_model(model: str) -> bool:
+    """1B-class models (what a 4 GB Raspberry Pi can hold) need compact prompts and no multilingual asks."""
+    m = model.lower()
+    return any(tag in m for tag in (":1b", "-1b", "1b-", ":e2b", "270m"))
+
+
+COACH_SYS_SMALL = """You are a warm percussion teacher. Reply with JSON: {"say_en": "<one or two real sentences of coaching based on the facts>",
+"drill_phrase": <index number from the facts>, "drill_bpm": <number from the facts>, "focus": "timing|finger|dynamics|reward"}.
+Write real sentences, never placeholders. Mention the weak fingers and syllable by name."""
+
+
 async def coach(client, url, model, summary: dict, names: tuple[str, ...], syllables: tuple[str, ...]) -> dict:
+    if is_small_model(model):
+        facts = (f"accuracy {round(float(summary.get('accuracy', 0)) * 100)}%, dominant error {summary.get('dominant_error', 'none')}, "
+                 f"weak fingers {', '.join(summary.get('weak_fingers', [])) or 'none'}, weak syllables {', '.join(summary.get('weak_syllables', [])) or 'none'}, "
+                 f"recommended bpm {summary.get('recommended_bpm', summary.get('current_bpm', 80))}, recommended phrase index 0")
+        c = await _chat(client, url, model, COACH_SYS_SMALL, facts, None, 140, timeout=120.0)
+        try:
+            d = normalize_keys(json.loads(c)) if c else {}
+        except json.JSONDecodeError:
+            d = {}
+        return {"say_en": str(d.get("say_en", "")), "say_ml": "", "drill_phrase": d.get("drill_phrase", 0),
+                "drill_bpm": d.get("drill_bpm", summary.get("recommended_bpm")), "focus": str(d.get("focus", "timing")), "model": model}
     c = await _chat(client, url, model, COACH_SYS, json.dumps({"attempt": summary, "names": names, "syllables": syllables}), None, 220)
     try:
         return normalize_keys(json.loads(c)) if c else {}
