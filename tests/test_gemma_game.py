@@ -33,3 +33,13 @@ def test_parse_round_enforces_level_target_and_novelty():
 def test_small_model_detection():
     from viral.gemma_thaalam import is_small_model
     assert is_small_model("gemma3:1b") and is_small_model("gemma3n:e2b") and not is_small_model("gemma3n:e4b")
+
+
+def test_small_model_coach_coerces_junk_fields(monkeypatch):
+    import asyncio, json
+    import viral.gemma_thaalam as gt
+    async def fake_chat(*a, **k):
+        return json.dumps({"key_en": "Focus on the ring finger for 'ka' at 72 bpm.", "drill_phrase": "a, a, a", "drill_bpm": None, "focus": "vibes"})
+    monkeypatch.setattr(gt, "_chat", fake_chat)
+    fb = asyncio.run(gt.coach(None, "u", "gemma3:1b", {"accuracy": .62, "recommended_bpm": 72}, (), ()))
+    assert fb["say_en"].startswith("Focus") and fb["drill_phrase"] == 0 and fb["drill_bpm"] == 72 and fb["focus"] == "timing"

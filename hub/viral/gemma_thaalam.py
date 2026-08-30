@@ -226,9 +226,14 @@ async def coach(client, url, model, summary: dict, names: tuple[str, ...], sylla
             d = normalize_keys(json.loads(c)) if c else {}
         except json.JSONDecodeError:
             d = {}
-        say = str(d.get("say_en") or next((v for v in d.values() if isinstance(v, str) and len(v) > 15), ""))
-        return {"say_en": say, "say_ml": "", "drill_phrase": d.get("drill_phrase", 0),
-                "drill_bpm": d.get("drill_bpm", summary.get("recommended_bpm")), "focus": str(d.get("focus", "timing")), "model": model}
+        say = str(d.get("say_en") or next((v for v in d.values() if isinstance(v, str) and len(v) > 15), ""))[:400]
+        def _num(v, default):
+            try: return float(v)
+            except (TypeError, ValueError): return default
+        phrase = int(_num(d.get("drill_phrase"), 0)); phrase = phrase if 0 <= phrase < 8 else 0
+        bpm = _num(d.get("drill_bpm"), _num(summary.get("recommended_bpm"), 80.0)); bpm = min(200.0, max(40.0, bpm))
+        focus = str(d.get("focus", "timing")); focus = focus if focus in ("timing", "finger", "dynamics", "reward") else "timing"
+        return {"say_en": say, "say_ml": "", "drill_phrase": phrase, "drill_bpm": bpm, "focus": focus, "model": model}
     c = await _chat(client, url, model, COACH_SYS, json.dumps({"attempt": summary, "names": names, "syllables": syllables}), None, 220)
     try:
         return normalize_keys(json.loads(c)) if c else {}
