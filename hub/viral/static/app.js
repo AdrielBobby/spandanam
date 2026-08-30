@@ -146,11 +146,13 @@ function updateNotes(now) {
   });
 }
 
-// ── vaaythari karaoke chip: client-inferred from lead-in timing, no dedicated WS message ──
+// ── vaaythari karaoke ────────────────────────────────────────────────────
+// The chant is opt-in server-side (hub.karaoke). Only claim it in the HUD when it is
+// actually on, otherwise the chip announces a chant that never plays.
 let chantChipTimer = null;
 function scheduleKaraokeChip(leadInS) {
   clearHudChip("chant");
-  if (!leadInS || leadInS <= 0) return;
+  if (!leadInS || leadInS <= 0 || !$("#karaoke").checked) return;
   addHudChip("chant", "chant", "🎙 chant on");
   clearTimeout(chantChipTimer);
   chantChipTimer = setTimeout(() => clearHudChip("chant"), leadInS * 1000);
@@ -301,6 +303,7 @@ async function loadState() {
     $("#" + id).innerHTML = Object.entries(s.kits).map(([k, v]) => `<option value="${k}" ${k === s.kit ? "selected" : ""}>${v.name}</option>`).join("");
   }
   if (s.score) setScore(s.score);
+  $("#karaoke").checked = !!s.karaoke;          // reflect the server's real state on load/reconnect
   $("#rig").textContent = s.dry ? "dry · laptop" : "glove live";
   $("#rig").classList.toggle("down", !!s.dry);
 }
@@ -345,6 +348,7 @@ async function postCompose() {
 // ── control wiring ───────────────────────────────────────────────────
 $("#bpm").oninput = (e) => ($("#bpmv").textContent = e.target.value);
 $("#kit").onchange = (e) => ws.send(JSON.stringify({ type: "kit", kit: e.target.value }));
+$("#karaoke").onchange = (e) => ws.send(JSON.stringify({ type: "karaoke", on: e.target.checked }));
 $("#goFree").onclick = () => ws.send(JSON.stringify({ type: "free", bpm: +$("#bpm").value, cycle: +$("#cycle").value, click: $("#click").value }));
 $("#stop").onclick = $("#stop2").onclick = () => { ws.send(JSON.stringify({ type: "stop" })); play = null; ladder = null; clearHudChip("ladder"); setMode("idle"); };
 $("#upload").onclick = uploadLearn;
