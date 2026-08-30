@@ -10,3 +10,9 @@ def test_devanagari_mapping_covers_core_syllables():
 def test_voice_override(monkeypatch):
     monkeypatch.setenv("THAALAM_VOICE", "Rishi"); assert chant_voice() == ("Rishi", False)
     monkeypatch.setenv("THAALAM_VOICE", "Lekha"); assert chant_voice() == ("Lekha", True)
+
+
+def test_stop_clears_active_and_does_not_raise():
+    from viral import speech
+    speech._ACTIVE.append(type("P", (), {"kill": lambda self: None})())
+    speech.stop(); assert speech._ACTIVE == []

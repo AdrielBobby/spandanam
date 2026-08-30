@@ -7,6 +7,27 @@ import shutil
 import subprocess
 
 log = logging.getLogger(__name__)
+_ACTIVE: list = []          # running TTS processes, so stop() can kill them (tab closed, Stop pressed)
+
+
+def _run(cmd: list[str]) -> None:
+    try:
+        p = subprocess.Popen(cmd); _ACTIVE.append(p); p.wait()
+    except Exception as e:
+        log.debug("tts failed: %s", e)
+    finally:
+        try: _ACTIVE.remove(p)
+        except Exception: pass
+
+
+def stop() -> None:
+    """Kill any speaking/chanting process immediately."""
+    for p in list(_ACTIVE):
+        try: p.kill()
+        except Exception: pass
+    _ACTIVE.clear()
+    for name in ("say", "espeak-ng"):
+        subprocess.run(["pkill", "-x", name], check=False, capture_output=True)
 
 # Vaaythari syllables in Devanagari so an Indic TTS voice pronounces them like a Malayali would, not like "ta" in English.
 SYL_DEVA = {"tha": "ता", "ki": "कि", "ta": "ट", "ka": "क", "dhi": "धि", "mi": "मि", "dhim": "धिम्", "thom": "थोम्", "num": "नुम्", "ri": "रि",
@@ -41,9 +62,9 @@ def speak(text: str, lang: str = "ml") -> None:
     if not text or os.environ.get("THAALAM_MUTE") == "1":
         return
     if shutil.which("espeak-ng"):
-        subprocess.run(["espeak-ng", "-v", lang if lang != "en" else "en", "-s", "140", text], check=False)
+        _run(["espeak-ng", "-v", lang if lang != "en" else "en", "-s", "140", text])
     elif shutil.which("say"):
-        subprocess.run(["say", text], check=False)
+        _run(["say", text])
     else:
         log.info("ASAN: %s", text)
 
@@ -54,10 +75,10 @@ def chant(syllables: tuple[str, ...], bpm: float) -> None:
         return
     beat = 60.0 / bpm
     if shutil.which("espeak-ng"):                                   # Pi/Linux: Hindi voice + Devanagari for Indic phonology
-        subprocess.run(["espeak-ng", "-v", "hi", "-s", str(int(60 * 60 / beat / 10)), _chant_text(syllables, True)], check=False)
+        _run(["espeak-ng", "-v", "hi", "-s", str(int(60 * 60 / beat / 10)), _chant_text(syllables, True)])
     elif shutil.which("say"):                                       # macOS: Lekha (hi_IN) if installed, else Indian English
         voice, deva = chant_voice()
         cmd = ["say", "-r", str(int(60 / beat * 1.2))] + (["-v", voice] if voice else []) + [_chant_text(syllables, deva)]
-        subprocess.run(cmd, check=False)
+        _run(cmd)
     else:
         log.info("CHANT: %s", " ".join(syllables))

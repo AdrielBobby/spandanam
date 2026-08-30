@@ -60,6 +60,7 @@ class Hub:
         self.http = httpx.AsyncClient()
         self.last_summary: dict = {}
         self.game_level = 0; self.game_history: list[dict] = []
+        self.karaoke = False                                     # vaaythari chant is opt-in (toggle in the dashboard)
         # Gemma engines: primary from config; extras from GEMMA_ENGINES (e.g. laptop e4b over tunnel + on-Pi 1b)
         # With named engines configured, they ARE the list; otherwise the single configured Gemma is "primary".
         self.engines: dict[str, dict] = dict(cfg.gemma_engines) or {"primary": {"url": cfg.ollama_url, "model": cfg.gemma_model}}
@@ -102,6 +103,7 @@ class Hub:
         if self.metro_task: self.metro_task.cancel(); self.metro_task = None
         self.play = None; self.glove.all_off()
         if self.mode in ("listen", "practice"): self.mode = "idle"      # _listen_loop / _practice_loop check this and exit
+        speech.stop()                                                      # kill any chant/speech immediately
         try:
             self.sampler.stop()
         except Exception: pass
@@ -226,7 +228,9 @@ class Hub:
         return [sum(1 for n in sc.notes if n.finger == f) for f in range(5)]
 
     def _chant(self, sc: Score) -> None:
-        """Fire-and-forget the vaaythari chant; speech.chant() blocks on a subprocess, so it must run off the event loop."""
+        """Fire-and-forget the vaaythari chant (only when karaoke is on); speech.chant() blocks on a subprocess, so it runs off the loop."""
+        if not self.karaoke:
+            return
         syllables = chantable_syllables(sc)
         if syllables:
             asyncio.get_running_loop().run_in_executor(None, speech.chant, syllables, sc.bpm)
@@ -248,7 +252,7 @@ def create_app(cfg: Config) -> FastAPI:
     @app.get("/api/state")
     async def state():
         return {"mode": hub.mode, "bpm": hub.bpm, "cycle": hub.cycle, "kit": hub.sampler.kit, "kits": KITS, "keys": FINGER_KEYS, "labels_ml": LABELS_ML,
-                "audio_device": getattr(hub.sampler.mixer, "device_name", None),
+                "audio_device": getattr(hub.sampler.mixer, "device_name", None), "karaoke": hub.karaoke,
                 "gemma": {"model": hub.engine()["model"], "ollama_url": hub.engine()["url"], "gemini_model": cfg.gemini_model,
                           "mode": hub.engine_mode, "engines": {n: hub.engine(n) for n in hub.engines}},
                 "score": json.loads(hub.score.to_json()) if hub.score else None, "dry": cfg.dry}
@@ -368,8 +372,8 @@ def create_app(cfg: Config) -> FastAPI:
                         await hub.broadcast({"type": "status", "text": f"phrase error: {e}"})
         except WebSocketDisconnect:
             hub.clients.discard(sock)
-            if not hub.clients and hub.mode in ("listen", "practice"):   # last dashboard gone (reload/close): stop playback
-                await hub.stop_all(); hub.mode = "idle"
+            if not hub.clients and hub.mode in ("listen", "practice"):   # last dashboard gone (reload/close): stop playback + ladder + chant
+                hub.ladder = None; await hub.stop_all(); hub.mode = "idle"
     return app
 
 
