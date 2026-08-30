@@ -58,6 +58,9 @@ class Hub:
         self.http = httpx.AsyncClient()
         self.last_summary: dict = {}
         self.game_level = 0; self.game_history: list[dict] = []
+        # Gemma engines: primary from config; extras from GEMMA_ENGINES (e.g. laptop e4b over tunnel + on-Pi 1b)
+        self.engines: dict[str, dict] = {"primary": {"url": cfg.ollama_url, "model": cfg.gemma_model}} | dict(cfg.gemma_engines)
+        self.engine_mode: str = next(iter(cfg.gemma_engines), "primary")   # an engine name, or "both"
 
     async def broadcast(self, msg: dict) -> None:
         dead = []
@@ -185,16 +188,34 @@ class Hub:
         self.mode = "idle"
         return
 
+    def active_engines(self) -> list[str]:
+        if self.engine_mode == "both":
+            return [n for n in self.engines if n != "primary"] or ["primary"]
+        return [self.engine_mode if self.engine_mode in self.engines else "primary"]
+
+    def engine(self, name: str | None = None) -> dict:
+        e = self.engines.get(name or self.active_engines()[0], self.engines["primary"])
+        return e | {"name": name or self.active_engines()[0], "on_device": ("127.0.0.1" in e["url"] and ":11435" not in e["url"])}
+
+    async def _coach_one(self, name: str, facts: dict, sc: Score, analysis) -> dict:
+        e = self.engine(name); t0 = time.monotonic()
+        fb = await coach(self.http, e["url"], e["model"], facts, sc.finger_map.names, sc.finger_map.syllables)
+        if analysis:                                             # accurate Malayalam from facts; Gemma's Manglish kept separately
+            ml = coach_ml(analysis.accepted_accuracy_pct, analysis.dominant_error, list(analysis.weak_fingers),
+                          list(analysis.weak_bols), fb.get("drill_bpm") or analysis.recommended_tempo_bpm, fb.get("drill_phrase"))
+            fb = {**fb, "say_manglish": fb.get("say_ml", ""), "say_ml": ml}
+        return {**fb, "engine": name, "model": e["model"], "on_device": e["on_device"], "seconds": round(time.monotonic() - t0, 1)}
+
     async def _coach_after(self, sc: Score, analysis) -> None:
-        """Gemma coaching (7–15 s) runs after the round has ended so the UI shows stars immediately."""
+        """Gemma coaching runs after the round has ended so the UI shows stars immediately. In 'both' mode every engine answers."""
         try:
             facts = (analysis_for_coach(analysis, sc.bpm) | {"points": self.last_summary["points"], "stars": self.last_summary["stars"]}) if analysis else self.last_summary
-            fb = await coach(self.http, self.cfg.ollama_url, self.cfg.gemma_model, facts, sc.finger_map.names, sc.finger_map.syllables)
-            if analysis:                                         # accurate Malayalam from facts; Gemma's Manglish kept separately
-                ml = coach_ml(analysis.accepted_accuracy_pct, analysis.dominant_error, list(analysis.weak_fingers),
-                              list(analysis.weak_bols), fb.get("drill_bpm") or analysis.recommended_tempo_bpm, fb.get("drill_phrase"))
-                fb = {**fb, "say_manglish": fb.get("say_ml", ""), "say_ml": ml}
-            await self.broadcast({"type": "coach", **fb})
+            results = await asyncio.gather(*[self._coach_one(n, facts, sc, analysis) for n in self.active_engines()], return_exceptions=True)
+            ok = [r for r in results if isinstance(r, dict)]
+            for r in results:
+                if not isinstance(r, dict): log.warning("coach engine failed: %s", r)
+            if not ok: return
+            await self.broadcast({"type": "coach", **ok[0], "results": ok, "mode": self.engine_mode})
         except Exception as e:
             log.warning("coach failed: %s", e)
 
@@ -222,20 +243,36 @@ def create_app(cfg: Config) -> FastAPI:
     async def state():
         return {"mode": hub.mode, "bpm": hub.bpm, "cycle": hub.cycle, "kit": hub.sampler.kit, "kits": KITS, "keys": FINGER_KEYS, "labels_ml": LABELS_ML,
                 "audio_device": getattr(hub.sampler.mixer, "device_name", None),
-                "gemma": {"model": cfg.gemma_model, "ollama_url": cfg.ollama_url, "gemini_model": cfg.gemini_model},
+                "gemma": {"model": hub.engine()["model"], "ollama_url": hub.engine()["url"], "gemini_model": cfg.gemini_model,
+                          "mode": hub.engine_mode, "engines": {n: hub.engine(n) for n in hub.engines}},
                 "score": json.loads(hub.score.to_json()) if hub.score else None, "dry": cfg.dry}
+
+    async def _engine_status(name: str) -> dict:
+        e = hub.engine(name)
+        try:
+            tags = (await hub.http.get(f"{e['url']}/api/tags", timeout=4)).json().get("models", [])
+            ps = (await hub.http.get(f"{e['url']}/api/ps", timeout=4)).json().get("models", [])
+            return {"engine": name, "ok": True, "model": e["model"], "ollama_url": e["url"], "on_device": e["on_device"],
+                    "available": [m["name"] for m in tags], "loaded": [m["name"] for m in ps], "present": e["model"] in [m["name"] for m in tags]}
+        except Exception as ex:
+            return {"engine": name, "ok": False, "model": e["model"], "ollama_url": e["url"], "on_device": e["on_device"], "error": str(ex)[:120]}
 
     @app.get("/api/gemma")
     async def gemma_status():
-        """Proof-of-life for judges: which Gemma, where, is it up, is it loaded."""
-        try:
-            tags = (await hub.http.get(f"{cfg.ollama_url}/api/tags", timeout=4)).json().get("models", [])
-            ps = (await hub.http.get(f"{cfg.ollama_url}/api/ps", timeout=4)).json().get("models", [])
-            return {"ok": True, "model": cfg.gemma_model, "ollama_url": cfg.ollama_url,
-                    "available": [m["name"] for m in tags], "loaded": [m["name"] for m in ps],
-                    "on_device": "127.0.0.1" in cfg.ollama_url and ":11435" not in cfg.ollama_url}
-        except Exception as e:
-            return JSONResponse({"ok": False, "model": cfg.gemma_model, "ollama_url": cfg.ollama_url, "error": str(e)[:120]}, 503)
+        """Proof-of-life for judges: every Gemma engine — which model, where, up, loaded — and which is active."""
+        statuses = await asyncio.gather(*[_engine_status(n) for n in hub.engines])
+        active = hub.active_engines()
+        primary = next(s for s in statuses if s["engine"] == active[0])
+        return {**primary, "mode": hub.engine_mode, "active": active, "engines": statuses}
+
+    @app.post("/api/gemma/select")
+    async def gemma_select(body: dict):
+        mode = str(body.get("mode", "primary"))
+        if mode != "both" and mode not in hub.engines:
+            return JSONResponse({"ok": False, "error": f"unknown engine {mode}; have {list(hub.engines)} or 'both'"}, 400)
+        hub.engine_mode = mode
+        await hub.broadcast({"type": "status", "text": f"Gemma engine → {mode}"})
+        return {"ok": True, "mode": mode, "active": hub.active_engines()}
 
     @app.post("/api/audio/reopen")
     async def audio_reopen():
@@ -254,7 +291,7 @@ def create_app(cfg: Config) -> FastAPI:
         p.write_bytes(await file.read())
         await hub.broadcast({"type": "status", "text": "transcribing…"})
         try:
-            score, st = await learn_from_file(p, cfg.ollama_url, cfg.gemma_model)
+            e = hub.engine(); score, st = await learn_from_file(p, e["url"], e["model"])
         except Exception as e:
             log.exception("learn failed"); return JSONResponse({"ok": False, "error": str(e)}, 500)
         hub.score = score; hub.sampler.set_kit(score.kit)
@@ -274,7 +311,7 @@ def create_app(cfg: Config) -> FastAPI:
             err = str(e)[:160]; log.warning("Gemini compose failed (%s); falling back to Gemma", err)
             await hub.broadcast({"type": "status", "text": "Gemini unavailable — composing on-device with Gemma…"})
             try:
-                sc = await compose_gemma(hub.http, cfg.ollama_url, cfg.gemma_model, brief, kit, thaalam, cycles, bpm)
+                e = hub.engine(); sc = await compose_gemma(hub.http, e["url"], e["model"], brief, kit, thaalam, cycles, bpm)
                 composer = "Gemma on-device (" + cfg.gemma_model + ")"
             except Exception as e2:
                 return JSONResponse({"ok": False, "error": f"gemini: {err} | gemma: {str(e2)[:160]}"}, 500)
@@ -312,7 +349,7 @@ def create_app(cfg: Config) -> FastAPI:
                     if hub.game_history: hub.game_history[-1]["result"] = "pass" if passed else "fail"
                     hub.game_level = hub.game_level + 1 if passed else max(1, hub.game_level)
                     if m.get("reset"): hub.game_level, hub.game_history = 1, []
-                    r = await next_round(hub.http, cfg.ollama_url, cfg.gemma_model, hub.game_level, hub.game_history)
+                    e = hub.engine(); r = await next_round(hub.http, e["url"], e["model"], hub.game_level, hub.game_history)
                     hub.game_history.append({"level": r.level, "phrase": list(r.phrase), "bpm": r.bpm})
                     hub.score = phrase_to_score(list(r.phrase), r.bpm, title=f"Maveli L{r.level}", cycles=1)
                     await hub.broadcast({"type": "game", "level": r.level, "phrase": list(r.phrase), "bpm": r.bpm, "banter": r.banter, "source": r.source})

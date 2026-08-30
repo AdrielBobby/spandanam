@@ -43,3 +43,15 @@ def test_small_model_coach_coerces_junk_fields(monkeypatch):
     monkeypatch.setattr(gt, "_chat", fake_chat)
     fb = asyncio.run(gt.coach(None, "u", "gemma3:1b", {"accuracy": .62, "recommended_bpm": 72}, (), ()))
     assert fb["say_en"].startswith("Focus") and fb["drill_phrase"] == 0 and fb["drill_bpm"] == 72 and fb["focus"] == "timing"
+
+
+def test_parse_engines_and_hub_engine_modes(monkeypatch):
+    from viral.config import parse_engines, Config
+    eng = parse_engines("laptop=http://127.0.0.1:11435|gemma3n:e4b, pi=http://127.0.0.1:11434|gemma3:1b")
+    assert eng["laptop"]["model"] == "gemma3n:e4b" and eng["pi"]["url"].endswith("11434") and parse_engines(None) == {}
+    monkeypatch.setattr("viral.server.Sampler", type("S", (), {"__init__": lambda self, k, assets=None: None, "set_kit": lambda *a, **k: None, "play": lambda *a, **k: None, "stop": lambda *a, **k: None, "kit": "chenda", "mixer": None}))
+    from viral.server import Hub
+    h = Hub(Config(dry=True, gemma_engines=eng))
+    assert h.engine_mode == "laptop" and h.active_engines() == ["laptop"] and h.engine()["on_device"] is False
+    h.engine_mode = "both"; assert h.active_engines() == ["laptop", "pi"] and h.engine("pi")["on_device"] is True
+    h.engine_mode = "nope"; assert h.active_engines() == ["primary"]

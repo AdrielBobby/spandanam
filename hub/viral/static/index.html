@@ -23,6 +23,11 @@ button.primary{width:100%;margin-top:10px;background:var(--acc);color:#000;borde
 button.ghost{width:100%;margin-top:6px;background:#1a1a1a;color:#fff;border:1px solid #333;padding:8px;border-radius:8px;cursor:pointer}
 #coach{white-space:pre-wrap;color:#ddd}.ml{font-family:"Noto Sans Malayalam","Manjari","Malayalam Sangam MN",system-ui,sans-serif;color:#bbb;font-size:13px}.mlbig{font-family:"Noto Sans Malayalam","Manjari","Malayalam Sangam MN",system-ui,sans-serif;font-size:17px;color:#fff;line-height:1.6}.en{color:#999;font-size:13px;margin-top:6px}
 .hidden{display:none}#status{color:var(--mut);font-size:12px}
+.eng{display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid #333;border-radius:8px;cursor:pointer;background:#0d0d0d}
+.eng.on{border-color:var(--acc);background:#1a1700}.eng b{color:#fff}.badge{font-size:10px;padding:2px 6px;border-radius:999px;background:#222;color:#bbb}
+.badge.dev{background:#0a3d1a;color:#7ee2a0}.badge.lap{background:#1b2a4a;color:#8fb8ff}.badge.down{background:#4a1b1b;color:#ff9d9d}
+.side{display:grid;grid-template-columns:1fr 1fr;gap:10px}.side>div{background:#0d0d0d;border:1px solid #222;border-radius:8px;padding:10px}
+.side h4{margin:0 0 6px 0;font-size:12px;color:#aaa;display:flex;gap:6px;align-items:center}
 .click{position:absolute;bottom:0;height:64px;width:20%;background:rgba(255,214,10,.15);pointer-events:none}
 </style></head><body>
 <header><h1>Thaa<span>lam</span></h1>
@@ -52,6 +57,9 @@ button.ghost{width:100%;margin-top:6px;background:#1a1a1a;color:#fff;border:1px 
     <button class="ghost" id="goListen">▶ Listen · കേൾക്കൂ</button>
     <button class="primary" id="goPractice">Play · വായിക്കൂ</button><button class="ghost" id="stop2">Stop · നിർത്തൂ</button>
     <div id="summary" style="margin-top:10px;color:#bbb;font-size:13px"></div></div>
+  <div class="card" id="cEngine"><h3>Gemma engine <span class="ml" style="font-size:12px">· ഏത് ജെമ്മ?</span></h3>
+    <div id="engines" style="display:flex;flex-direction:column;gap:6px;font-size:13px"></div>
+    <div id="engineNote" style="color:#777;font-size:12px;margin-top:6px"></div></div>
   <div class="card"><h3>Ashaan says · <span class="ml">ആശാൻ പറയുന്നു</span></h3><div id="coach" class="mlbig">—</div></div>
 </aside></main>
 <script>
@@ -70,7 +78,10 @@ function connect(){ws=new WebSocket(`ws://${location.host}/ws`);ws.onmessage=e=>
  else if(m.type==="practice_start"){startPractice(m.score,m.lead_in_s);}
  else if(m.type==="miss"){m.notes.forEach(i=>markNote(i,"miss"));$("#streak").textContent=0;judge("MISS · വിട്ടുപോയി","#ff3b30");}
  else if(m.type==="practice_end"){play=null;const s=m.summary;$("#summary").innerHTML=`${"★".repeat(s.stars)}${"☆".repeat(3-s.stars)} &nbsp; ${Math.round(s.accuracy*100)}% · ${s.points} pts<br>perfect ${s.perfect} · good ${s.good} · miss ${s.misses} · wrong finger ${s.wrong_finger}`;}
- else if(m.type==="coach"){$("#coach").innerHTML=`<div class="mlbig">${m.say_ml||""}</div><div class="en">${m.say_en||""}</div>${m.say_manglish?`<div class="en" style="color:#777;font-style:italic">${m.say_manglish}</div>`:""}${m.drill_phrase!=null?`<div style="color:#777;font-size:12px;margin-top:6px">drill: phrase ${m.drill_phrase+1} @ ${Math.round(m.drill_bpm||0)} bpm</div>`:""}`;}
+ else if(m.type==="coach"){const one=r=>`<div class="mlbig">${r.say_ml||""}</div><div class="en">${r.say_en||""}</div>${r.say_manglish?`<div class="en" style="color:#777;font-style:italic">${r.say_manglish}</div>`:""}${r.drill_phrase!=null?`<div style="color:#777;font-size:12px;margin-top:6px">drill: phrase ${(+r.drill_phrase)+1} @ ${Math.round(r.drill_bpm||0)} bpm</div>`:""}`;
+   const head=r=>`<h4><b>${r.engine||""}</b> <span class="badge ${r.on_device?"dev":"lap"}">${r.on_device?"on-device":"laptop"}</span> <span class="badge">${r.model||""}</span> <span class="badge">${r.seconds!=null?r.seconds+" s":""}</span></h4>`;
+   if(m.results&&m.results.length>1){$("#coach").innerHTML=`<div class="side">${m.results.map(r=>`<div>${head(r)}${one(r)}</div>`).join("")}</div>`;}
+   else{$("#coach").innerHTML=`${m.engine?head(m):""}${one(m)}`;}}
  else if(m.type==="status"){$("#status").textContent=m.text;}
  else if(m.type==="kit"){$("#status").textContent="kit: "+m.kit;}};ws.onclose=()=>setTimeout(connect,800);}
 document.addEventListener("keydown",e=>{if(e.repeat)return;const k=e.key.toLowerCase();if(k in KEYS||e.key===" "){e.preventDefault();ws.send(JSON.stringify({type:"key",key:e.key===" "?" ":k,v:.9}));}});
@@ -94,5 +105,11 @@ $("#loadPhrase").onclick=()=>ws.send(JSON.stringify({type:"phrase",text:$("#phra
 $("#goListen").onclick=()=>ws.send(JSON.stringify({type:"listen",phrase:$("#phrase").value===""?null:+$("#phrase").value,speed:+$("#speed").value}));
 $("#goPractice").onclick=()=>ws.send(JSON.stringify({type:"practice",phrase:$("#phrase").value===""?null:+$("#phrase").value,speed:+$("#speed").value}));
 for(const [t,c] of [["tFree","cFree"],["tLearn","cLearn"],["tPractice","cPractice"]]){$("#"+t).onclick=()=>{document.querySelectorAll(".tabs button").forEach(b=>b.classList.remove("on"));$("#"+t).classList.add("on");["cFree","cLearn","cPractice"].forEach(x=>$("#"+x).classList.toggle("hidden",x!==c));};}
-pad();connect();
+async function loadEngines(){try{const g=await (await fetch("/api/gemma")).json();const modes=[...g.engines.map(e=>e.engine)];if(g.engines.length>1)modes.push("both");
+ $("#engines").innerHTML=modes.map(mo=>{const e=g.engines.find(x=>x.engine===mo);const on=g.mode===mo;
+  const badges=e?`<span class="badge ${e.on_device?"dev":"lap"}">${e.on_device?"on-device":"laptop"}</span><span class="badge ${e.ok?"":"down"}">${e.model}${e.ok?(e.loaded&&e.loaded.includes(e.model)?" · loaded":""):" · unreachable"}</span>`:`<span class="badge">side by side</span>`;
+  return `<div class="eng ${on?"on":""}" data-mode="${mo}"><b>${mo==="both"?"Both":mo}</b>${badges}</div>`;}).join("");
+ document.querySelectorAll(".eng").forEach(el=>el.onclick=async()=>{await fetch("/api/gemma/select",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({mode:el.dataset.mode})});loadEngines();});
+ $("#engineNote").textContent=g.mode==="both"?"Coaching runs on every engine in parallel — compare answers and speed.":`Learn, coach, game and compose use “${g.mode}”.`;}catch(e){$("#engineNote").textContent="engine status unavailable";}}
+pad();connect();loadEngines();setInterval(loadEngines,15000);
 </script></body></html>

@@ -20,6 +20,16 @@ KITS = {
 PERFECT_MS, GOOD_MS, MISS_MS = 40, 90, 180
 
 
+def parse_engines(spec: str | None) -> dict[str, dict]:
+    """GEMMA_ENGINES="laptop=http://127.0.0.1:11435|gemma3n:e4b,pi=http://127.0.0.1:11434|gemma3:1b" -> {name: {url, model}}"""
+    out: dict[str, dict] = {}
+    for part in (spec or "").split(","):
+        if "=" in part and "|" in part:
+            name, rest = part.split("=", 1); url, model = rest.rsplit("|", 1)
+            out[name.strip()] = {"url": url.strip(), "model": model.strip()}
+    return out
+
+
 @dataclass(frozen=True)
 class Config:
     host: str = "0.0.0.0"
@@ -31,3 +41,4 @@ class Config:
     gemini_model: str = field(default_factory=lambda: os.environ.get("GEMINI_MODEL", "gemini-3.6-flash"))
     imu_strike_g: float = 2.5
     dry: bool = False
+    gemma_engines: dict = field(default_factory=lambda: parse_engines(os.environ.get("GEMMA_ENGINES")))
