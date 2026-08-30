@@ -16,3 +16,11 @@ def test_stop_clears_active_and_does_not_raise():
     from viral import speech
     speech._ACTIVE.append(type("P", (), {"kill": lambda self: None})())
     speech.stop(); assert speech._ACTIVE == []
+
+
+def test_stop_survives_missing_pkill(monkeypatch):
+    """No pkill on Windows, and check=False does not swallow a missing executable. stop()
+    runs on startup via start_free -> stop_all, so raising here takes the whole server down."""
+    from viral import speech
+    monkeypatch.setattr(speech.shutil, "which", lambda _name: None)
+    speech.stop()           # must not raise

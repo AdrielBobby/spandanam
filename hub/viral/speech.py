@@ -26,8 +26,14 @@ def stop() -> None:
         try: p.kill()
         except Exception: pass
     _ACTIVE.clear()
-    for name in ("say", "espeak-ng"):
-        subprocess.run(["pkill", "-x", name], check=False, capture_output=True)
+    # Sweep up orphans from an earlier run. POSIX only -- there is no pkill on Windows, and
+    # check=False does NOT swallow a missing executable, so an unguarded call raises
+    # FileNotFoundError. stop() runs on startup (start_free -> stop_all), which took the
+    # whole server down on the Windows dev laptop.
+    if shutil.which("pkill"):
+        for name in ("say", "espeak-ng"):
+            try: subprocess.run(["pkill", "-x", name], check=False, capture_output=True)
+            except Exception as e: log.debug("pkill %s failed: %s", name, e)
 
 # Vaaythari syllables in Devanagari so an Indic TTS voice pronounces them like a Malayali would, not like "ta" in English.
 SYL_DEVA = {"tha": "ता", "ki": "कि", "ta": "ट", "ka": "क", "dhi": "धि", "mi": "मि", "dhim": "धिम्", "thom": "थोम्", "num": "नुम्", "ri": "रि",
