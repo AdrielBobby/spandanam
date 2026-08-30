@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import threading
 import time
 
@@ -18,11 +19,12 @@ def _name(finger: int) -> str:
 class Glove:
     def __init__(self, dry: bool):
         self.dry = dry
+        self.buzz_enabled = os.environ.get("THAALAM_NO_BUZZ", "0") != "1"    # THAALAM_NO_BUZZ=1 mutes buzzers (LEDs keep working)
         if not dry:
             from gpiozero import LED, PWMOutputDevice
             self.buzz = [PWMOutputDevice(p, frequency=200) for p in BUZZER_PINS]
             self.leds = [LED(p) for p in LED_PINS]
-        log.info("glove %s", "DRY" if dry else f"buzzers {BUZZER_PINS} leds {LED_PINS}")
+        log.info("glove %s%s", "DRY" if dry else f"buzzers {BUZZER_PINS} leds {LED_PINS}", "" if self.buzz_enabled else " · buzzers MUTED (THAALAM_NO_BUZZ=1)")
 
     def _log(self, msg: str, *args: object) -> None:
         """INFO in dry mode (visible on the laptop), DEBUG on the Pi (quiet during a live run)."""
@@ -32,9 +34,9 @@ class Glove:
         if self.dry:
             return
         if led: self.leds[finger].on()
-        self.buzz[finger].value = strength
+        if self.buzz_enabled: self.buzz[finger].value = strength
         time.sleep(ms / 1000)
-        self.buzz[finger].value = 0
+        if self.buzz_enabled: self.buzz[finger].value = 0
         if led: self.leds[finger].off()
 
     def cue(self, finger: int, ms: int = 60, strength: float = 1.0, led: bool = True) -> None:
