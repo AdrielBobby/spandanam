@@ -518,7 +518,7 @@ function onModelLoaded(gltf) {
   // tail) painted on an open-ended cylinder — no custom shader needed, and one texture is
   // shared by every note. Additive blending makes it read as light rather than plastic.
   trailTex = makeTrailTexture();
-  trailGeo = new THREE.CylinderGeometry(zoneRadius * 0.5, zoneRadius * 0.78, 1, 20, 1, true);
+  trailGeo = new THREE.PlaneGeometry(zoneRadius * 1.5, 1);
   trailGeo.translate(0, 0.5, 0);            // pivot at the bottom, so scale.y grows it upward
 
   // Frame the playfield now that the REAL head radius and lane height are known (doing this
@@ -629,17 +629,27 @@ function updateZones(now) {
   });
 }
 // ── Synthesia-style 3D falling notes ────────────────────────────────────
-// Vertical gradient: opaque at the note, fading to nothing up the tail. Texture row 0 is
-// the top of the cylinder (three.js flips Y by default), so stop 0 is the transparent end.
+// A trail has to be a soft-edged billboard, not geometry you can see the sides of. Alpha
+// falls off along the tail AND across the width, so there is no hard silhouette anywhere:
+// squared falloff across gives a feathered edge rather than a visible rectangle.
 function makeTrailTexture() {
-  const c = document.createElement("canvas");
-  c.width = 4; c.height = 64;
-  const g = c.getContext("2d"), grad = g.createLinearGradient(0, 0, 0, 64);
-  grad.addColorStop(0.0, "rgba(255,255,255,0)");
-  grad.addColorStop(0.55, "rgba(255,255,255,0.35)");
-  grad.addColorStop(1.0, "rgba(255,255,255,1)");
-  g.fillStyle = grad; g.fillRect(0, 0, 4, 64);
-  return new THREE.CanvasTexture(c);
+  const W = 32, H = 128;
+  const c = document.createElement("canvas"); c.width = W; c.height = H;
+  const g = c.getContext("2d"), img = g.createImageData(W, H);
+  for (let y = 0; y < H; y++) {
+    const along = Math.pow(y / (H - 1), 1.8);          // row 0 = tail (three.js flips Y)
+    for (let x = 0; x < W; x++) {
+      const u = (x / (W - 1)) * 2 - 1;                 // -1..1 across the width
+      const across = Math.max(0, 1 - u * u);
+      const i = (y * W + x) * 4;
+      img.data[i] = img.data[i + 1] = img.data[i + 2] = 255;
+      img.data[i + 3] = Math.round(along * across * across * 255);
+    }
+  }
+  g.putImageData(img, 0, 0);
+  const t = new THREE.CanvasTexture(c);
+  t.minFilter = THREE.LinearFilter;                     // no mip shimmer on a thin quad
+  return t;
 }
 function clear3DNotes() {
   noteMeshes.forEach((g) => {
@@ -660,10 +670,13 @@ function build3DNotes(s) {
     const puckMat = new THREE.MeshBasicMaterial({ color: COLORS[n.finger], transparent: true, opacity: 0.95 });
     g.add(new THREE.Mesh(noteGeo, puckMat));
     const trailMat = new THREE.MeshBasicMaterial({
-      color: COLORS[n.finger], map: trailTex, transparent: true, opacity: 0.55,
+      color: COLORS[n.finger], map: trailTex, transparent: true, opacity: 0.5,
       side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending });
     const trail = new THREE.Mesh(trailGeo, trailMat);
     trail.scale.y = trailLen;                 // sits on the puck, streaks back up the lane
+    // Yaw the quad to face the camera. The camera is locked, and so is the lane, so this
+    // is a one-time turn rather than per-frame billboarding.
+    trail.rotation.y = Math.atan2(camera.position.x - zone.position.x, camera.position.z - zone.position.z);
     g.add(trail);
     g.position.copy(zone.position);
     g.visible = false;
