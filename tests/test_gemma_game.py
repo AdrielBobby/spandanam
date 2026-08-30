@@ -54,4 +54,5 @@ def test_parse_engines_and_hub_engine_modes(monkeypatch):
     h = Hub(Config(dry=True, gemma_engines=eng))
     assert h.engine_mode == "laptop" and h.active_engines() == ["laptop"] and h.engine()["on_device"] is False
     h.engine_mode = "both"; assert h.active_engines() == ["laptop", "pi"] and h.engine("pi")["on_device"] is True
-    h.engine_mode = "nope"; assert h.active_engines() == ["primary"]
+    h.engine_mode = "nope"; assert h.active_engines() == ["laptop"]
+    h2 = Hub(Config(dry=True)); assert list(h2.engines) == ["primary"] and h2.active_engines() == ["primary"]

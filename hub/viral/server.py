@@ -59,8 +59,9 @@ class Hub:
         self.last_summary: dict = {}
         self.game_level = 0; self.game_history: list[dict] = []
         # Gemma engines: primary from config; extras from GEMMA_ENGINES (e.g. laptop e4b over tunnel + on-Pi 1b)
-        self.engines: dict[str, dict] = {"primary": {"url": cfg.ollama_url, "model": cfg.gemma_model}} | dict(cfg.gemma_engines)
-        self.engine_mode: str = next(iter(cfg.gemma_engines), "primary")   # an engine name, or "both"
+        # With named engines configured, they ARE the list; otherwise the single configured Gemma is "primary".
+        self.engines: dict[str, dict] = dict(cfg.gemma_engines) or {"primary": {"url": cfg.ollama_url, "model": cfg.gemma_model}}
+        self.engine_mode: str = next(iter(self.engines))                    # an engine name, or "both"
 
     async def broadcast(self, msg: dict) -> None:
         dead = []
@@ -190,11 +191,11 @@ class Hub:
 
     def active_engines(self) -> list[str]:
         if self.engine_mode == "both":
-            return [n for n in self.engines if n != "primary"] or ["primary"]
-        return [self.engine_mode if self.engine_mode in self.engines else "primary"]
+            return list(self.engines)
+        return [self.engine_mode if self.engine_mode in self.engines else next(iter(self.engines))]
 
     def engine(self, name: str | None = None) -> dict:
-        e = self.engines.get(name or self.active_engines()[0], self.engines["primary"])
+        e = self.engines.get(name or self.active_engines()[0], next(iter(self.engines.values())))
         return e | {"name": name or self.active_engines()[0], "on_device": ("127.0.0.1" in e["url"] and ":11435" not in e["url"])}
 
     async def _coach_one(self, name: str, facts: dict, sc: Score, analysis) -> dict:
