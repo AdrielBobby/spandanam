@@ -28,7 +28,7 @@ def stroke_from_samples(t_s: float, mags_g: list[float], gravity_xyz: tuple[floa
 
 class MPU6050Reader(threading.Thread):
     """Background reader; call .drain() to get strokes since last call. Dry-run yields nothing."""
-    ADDR, PWR, ACC = 0x68, 0x6B, 0x3B
+    ADDR, PWR, ACC, ACFG = 0x68, 0x6B, 0x3B, 0x1C
 
     def __init__(self, threshold_g: float, dry_run: bool = False):
         super().__init__(daemon=True)
@@ -39,6 +39,7 @@ class MPU6050Reader(threading.Thread):
         if not dry_run:
             from smbus2 import SMBus
             self._bus = SMBus(1); self._bus.write_byte_data(self.ADDR, self.PWR, 0)
+            self._bus.write_byte_data(self.ADDR, self.ACFG, 0x18)   # accel FS_SEL=3 => +/-16 g, matches the /2048 scale
 
     def _read_g(self) -> tuple[float, float, float]:
         d = self._bus.read_i2c_block_data(self.ADDR, self.ACC, 6)

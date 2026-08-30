@@ -15,7 +15,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from . import judge
-from .config import FINGER_KEYS, INPUT_OFFSET_MS, KITS, Config
+from .config import FINGER_KEYS, IMU_FINGER, INPUT_OFFSET_MS, KITS, Config
 from .events import Strike
 from .bridge import analysis_for_coach, analyze_attempt, phrase_to_score
 from .gemma_game import next_round
@@ -87,7 +87,7 @@ class Hub:
         while True:
             for st in self.imu.drain():
                 if self.mode == "practice": self.round_strokes.append(st)   # motion coach: tilt at impact
-                await self.on_strike(Strike(0, time.monotonic(), min(1.0, st.peak_g / 8), "imu"))
+                await self.on_strike(Strike(IMU_FINGER, time.monotonic(), min(1.0, st.peak_g / 8), "imu"))
             await asyncio.sleep(0.005)
 
     # ---- free mode

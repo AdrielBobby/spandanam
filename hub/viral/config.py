@@ -2,7 +2,8 @@ import os
 from dataclasses import dataclass, field
 
 FINGERS = ("thumb", "index", "middle", "ring", "pinky")
-FINGER_KEYS = {"j": 1, "k": 2, "l": 3, ";": 4, " ": 0}      # laptop keys emulate IMUs; finger 0 = real MPU6050
+FINGER_KEYS = {"j": 1, "k": 2, "l": 3, ";": 4, " ": 0}      # laptop keys emulate IMUs
+IMU_FINGER = 2   # which finger the single MPU6050 is physically mounted on (0=thumb .. 4=pinky)
 FINGER_COLORS = ("#ff3b30", "#ff9500", "#ffd60a", "#34c759", "#0a84ff")
 
 # Pi 5 GPIO (BCM). Buzzers on PWM-capable pins, LEDs on plain GPIO.
