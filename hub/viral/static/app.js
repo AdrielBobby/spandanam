@@ -235,7 +235,21 @@ function renderCoach(m) {
 // ── WebSocket connect + dispatch ─────────────────────────────────────
 // ---- browser audio: play the kit here so the listener hears it even when the server (Pi) has no speaker
 let actx = null, kitBuf = [null, null, null, null, null], browserAudio = true;
-function ensureAudio() { if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { browserAudio = false; } } if (actx && actx.state === "suspended") actx.resume(); }
+function ensureAudio() {
+  if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { browserAudio = false; return; } }
+  if (actx.state !== "running") actx.resume().then(updateSoundBanner).catch(() => {});
+  updateSoundBanner();
+}
+function updateSoundBanner() {
+  let b = document.getElementById("soundBanner");
+  const need = !actx || actx.state !== "running";
+  if (need && !b) {
+    b = document.createElement("div"); b.id = "soundBanner";
+    b.style.cssText = "position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:50;background:#f5c400;color:#111;font:600 14px system-ui,sans-serif;padding:10px 16px;border-radius:999px;box-shadow:0 10px 30px rgba(0,0,0,.5);cursor:pointer";
+    b.textContent = "🔊 Tap anywhere to enable sound · ശബ്ദം ഓൺ ചെയ്യാൻ ടാപ്പ് ചെയ്യൂ";
+    b.onclick = ensureAudio; document.body.appendChild(b);
+  } else if (!need && b) { b.remove(); }
+}
 async function loadKit() {
   ensureAudio(); if (!actx) return;
   for (let i = 0; i < 5; i++) {
@@ -244,11 +258,13 @@ async function loadKit() {
 }
 function playFinger(f, v = 0.9) {
   if (!browserAudio || !actx || !kitBuf[f]) return;
+  if (actx.state !== "running") { actx.resume().then(updateSoundBanner).catch(() => {}); return; }
   const src = actx.createBufferSource(); src.buffer = kitBuf[f];
   const g = actx.createGain(); g.gain.value = Math.max(0.15, Math.min(1, v));
   src.connect(g).connect(actx.destination); src.start();
 }
-document.addEventListener("pointerdown", ensureAudio, { once: true }); document.addEventListener("keydown", ensureAudio, { once: true });
+document.addEventListener("pointerdown", ensureAudio); document.addEventListener("keydown", ensureAudio); document.addEventListener("touchstart", ensureAudio, { passive: true });
+setTimeout(updateSoundBanner, 800);
 
 function connect() {
   ws = new WebSocket(`ws://${location.host}/ws`);
