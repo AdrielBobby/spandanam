@@ -284,6 +284,20 @@ def create_app(cfg: Config) -> FastAPI:
         await hub.broadcast({"type": "status", "text": f"Gemma engine → {mode}"})
         return {"ok": True, "mode": mode, "active": hub.active_engines()}
 
+    @app.get("/api/kit/{finger}.wav")
+    async def kit_sample(finger: int):
+        """Current kit voice as a WAV so the browser can play sounds itself (the Pi may have no speaker)."""
+        import io, wave
+        import numpy as np
+        from .sound import SR
+        buf = hub.sampler.buf[max(0, min(4, finger))]
+        b = io.BytesIO()
+        with wave.open(b, "wb") as w:
+            w.setnchannels(1); w.setsampwidth(2); w.setframerate(SR)
+            w.writeframes((np.clip(buf, -1, 1) * 32767).astype("<i2").tobytes())
+        from fastapi.responses import Response
+        return Response(b.getvalue(), media_type="audio/wav", headers={"Cache-Control": "no-store"})
+
     @app.post("/api/audio/reopen")
     async def audio_reopen():
         """Rebind audio to the current default output device (after plugging in headphones / the stage speaker)."""

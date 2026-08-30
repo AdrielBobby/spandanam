@@ -233,12 +233,29 @@ function renderCoach(m) {
 }
 
 // ── WebSocket connect + dispatch ─────────────────────────────────────
+// ---- browser audio: play the kit here so the listener hears it even when the server (Pi) has no speaker
+let actx = null, kitBuf = [null, null, null, null, null], browserAudio = true;
+function ensureAudio() { if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { browserAudio = false; } } if (actx && actx.state === "suspended") actx.resume(); }
+async function loadKit() {
+  ensureAudio(); if (!actx) return;
+  for (let i = 0; i < 5; i++) {
+    try { const r = await fetch(`/api/kit/${i}.wav?t=${Date.now()}`); kitBuf[i] = await actx.decodeAudioData(await r.arrayBuffer()); } catch (e) { kitBuf[i] = null; }
+  }
+}
+function playFinger(f, v = 0.9) {
+  if (!browserAudio || !actx || !kitBuf[f]) return;
+  const src = actx.createBufferSource(); src.buffer = kitBuf[f];
+  const g = actx.createGain(); g.gain.value = Math.max(0.15, Math.min(1, v));
+  src.connect(g).connect(actx.destination); src.start();
+}
+document.addEventListener("pointerdown", ensureAudio, { once: true }); document.addEventListener("keydown", ensureAudio, { once: true });
+
 function connect() {
   ws = new WebSocket(`ws://${location.host}/ws`);
   ws.onmessage = (e) => {
     const m = JSON.parse(e.data);
     if (m.type === "strike") {
-      $("#hint").style.display = "none"; flashFoot(m.finger);
+      $("#hint").style.display = "none"; flashFoot(m.finger); playFinger(m.finger, m.v);
       if (m.judge === "auto") { markNote(m.note, "auto"); }
       else if (m.judge) {
         const map = { perfect: ["PERFECT · കൃത്യം", "#34c759"], good: ["GOOD · നല്ലത്", "#ffd60a"], late: ["LATE · വൈകി", "#ff9500"], early: ["EARLY · നേരത്തെ", "#ff9500"], wrong_finger: ["WRONG FINGER · തെറ്റായ വിരൽ", "#ff3b30"], extra: ["—", "#666"] };
@@ -255,7 +272,7 @@ function connect() {
       $("#track").appendChild(c); setTimeout(() => c.remove(), 120);
       if (m.down) triggerStrikeFx(m.finger, "click");
     } else if (m.type === "score") {
-      setScore(m.score);
+      setScore(m.score); setTimeout(loadKit, 300);
       const conf = m.confidence != null ? ` · confidence ${Math.round(m.confidence * 100)}%` : "";
       $("#scoreInfo").innerHTML = `${m.score.title} · ${m.score.thaalam} · ${m.score.notes.length} notes · ${Math.round(m.score.bpm)} bpm${conf}<br><span class="mlbig" style="font-size:14px">${m.summary_ml || ""}</span><br><span class="en">${m.gemma || ""}</span>`;
       $("#status").textContent = `${m.score.thaalam}${conf}`;
@@ -347,7 +364,7 @@ async function postCompose() {
 
 // ── control wiring ───────────────────────────────────────────────────
 $("#bpm").oninput = (e) => ($("#bpmv").textContent = e.target.value);
-$("#kit").onchange = (e) => ws.send(JSON.stringify({ type: "kit", kit: e.target.value }));
+$("#kit").onchange = (e) => { ws.send(JSON.stringify({ type: "kit", kit: e.target.value })); setTimeout(loadKit, 400); };
 $("#karaoke").onchange = (e) => ws.send(JSON.stringify({ type: "karaoke", on: e.target.checked }));
 $("#goFree").onclick = () => ws.send(JSON.stringify({ type: "free", bpm: +$("#bpm").value, cycle: +$("#cycle").value, click: $("#click").value }));
 $("#stop").onclick = $("#stop2").onclick = () => { ws.send(JSON.stringify({ type: "stop" })); play = null; ladder = null; clearHudChip("ladder"); setMode("idle"); };
@@ -770,7 +787,7 @@ function updateLabels() {
 
 // ── boot ──────────────────────────────────────────────────────────────
 renderFoot();
-connect();
+connect(); loadKit();
 loadState();
 loadEngines();
 setInterval(loadEngines, 15000);
