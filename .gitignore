@@ -13,3 +13,5 @@ data/sessions/*
 assets/tracks/*
 !assets/tracks/.gitkeep
 assets/kits/
+thaalam_ui.png
+.playwright-mcp/
