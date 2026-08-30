@@ -74,7 +74,7 @@ def _run(hub: Hub, body) -> None:
     asyncio.run(wrapped())
 
 
-async def _wait_idle(hub: Hub, timeout_s: float = 5.0) -> None:
+async def _wait_idle(hub: Hub, timeout_s: float = 20.0) -> None:
     elapsed = 0.0
     while hub.mode != "idle" and elapsed < timeout_s:
         await asyncio.sleep(0.02)
@@ -82,7 +82,7 @@ async def _wait_idle(hub: Hub, timeout_s: float = 5.0) -> None:
     assert hub.mode == "idle", "round never completed"
 
 
-async def _wait_for_broadcast(hub: Hub, msg_type: str, timeout_s: float = 5.0) -> dict:
+async def _wait_for_broadcast(hub: Hub, msg_type: str, timeout_s: float = 20.0) -> dict:
     elapsed = 0.0
     while elapsed < timeout_s:
         for m in hub.broadcast_log:

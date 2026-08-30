@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import shutil
 import subprocess
 
@@ -9,7 +10,7 @@ log = logging.getLogger(__name__)
 
 
 def speak(text: str, lang: str = "ml") -> None:
-    if not text:
+    if not text or os.environ.get("THAALAM_MUTE") == "1":
         return
     if shutil.which("espeak-ng"):
         subprocess.run(["espeak-ng", "-v", lang if lang != "en" else "en", "-s", "140", text], check=False)
@@ -21,6 +22,8 @@ def speak(text: str, lang: str = "ml") -> None:
 
 def chant(syllables: tuple[str, ...], bpm: float) -> None:
     """Chant the vaaythari at tempo (used together with the buzzer taps)."""
+    if os.environ.get("THAALAM_MUTE") == "1":
+        return
     beat = 60.0 / bpm
     if shutil.which("espeak-ng"):
         subprocess.run(["espeak-ng", "-s", str(int(60 * 60 / beat / 10)), " ".join(syllables)], check=False)

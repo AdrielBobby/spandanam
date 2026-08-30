@@ -172,6 +172,22 @@ class Hub:
             if analysis:
                 self.last_summary |= {"analysis": analysis.as_dict()}
             await self.broadcast({"type": "practice_end", "summary": self.last_summary})
+            asyncio.create_task(self._coach_after(sc, analysis))   # coaching (7–15 s of Gemma) never blocks the round flow
+            if self.ladder:                                          # kaalam ladder (Adriel): step up / retry, next round starts itself
+                prev, result = self.ladder, advance(self.ladder, self.last_summary["stars"])
+                self.ladder = result.ladder
+                await self.broadcast({"type": f"ladder_{result.event}", "total_steps": prev.total_steps,
+                                       "step": self.ladder.step if self.ladder else None,
+                                       "bpm_scale": self.ladder.bpm_scale if self.ladder else None})
+                if self.ladder:
+                    await self.start_practice(self.ladder.phrase, self.ladder.bpm_scale)
+                    return
+        self.mode = "idle"
+        return
+
+    async def _coach_after(self, sc: Score, analysis) -> None:
+        """Gemma coaching (7–15 s) runs after the round has ended so the UI shows stars immediately."""
+        try:
             facts = (analysis_for_coach(analysis, sc.bpm) | {"points": self.last_summary["points"], "stars": self.last_summary["stars"]}) if analysis else self.last_summary
             fb = await coach(self.http, self.cfg.ollama_url, self.cfg.gemma_model, facts, sc.finger_map.names, sc.finger_map.syllables)
             if analysis:                                         # accurate Malayalam from facts; Gemma's Manglish kept separately
@@ -179,16 +195,8 @@ class Hub:
                               list(analysis.weak_bols), fb.get("drill_bpm") or analysis.recommended_tempo_bpm, fb.get("drill_phrase"))
                 fb = {**fb, "say_manglish": fb.get("say_ml", ""), "say_ml": ml}
             await self.broadcast({"type": "coach", **fb})
-            if self.ladder:
-                prev, result = self.ladder, advance(self.ladder, self.last_summary["stars"])
-                self.ladder = result.ladder
-                await self.broadcast({"type": f"ladder_{result.event}", "total_steps": prev.total_steps,
-                                       "step": self.ladder.step if self.ladder else None,
-                                       "bpm_scale": self.ladder.bpm_scale if self.ladder else None})
-                if self.ladder:                                     # step_up or retry: next round starts itself
-                    await self.start_practice(self.ladder.phrase, self.ladder.bpm_scale)
-                    return
-        self.mode = "idle"
+        except Exception as e:
+            log.warning("coach failed: %s", e)
 
     def _per_finger(self, sc: Score) -> list[int]:
         return [sum(1 for n in sc.notes if n.finger == f) for f in range(5)]
