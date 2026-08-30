@@ -346,6 +346,10 @@ def create_app(cfg: Config) -> FastAPI:
                 elif t == "kit": hub.sampler.set_kit(m.get("kit", "chenda")); await hub.broadcast({"type": "kit", "kit": hub.sampler.kit})
                 elif t == "practice": hub.ladder = None; await hub.start_practice(m.get("phrase"), float(m.get("speed", 1.0)))
                 elif t == "listen": hub.ladder = None; await hub.start_listen(m.get("phrase"), float(m.get("speed", 1.0)))
+                elif t == "karaoke":                      # vaaythari chant toggle; _chant() reads this flag
+                    hub.karaoke = bool(m.get("on", False))
+                    if not hub.karaoke: speech.stop()
+                    await hub.broadcast({"type": "status", "text": f"vaaythari chant {'on' if hub.karaoke else 'off'}"})
                 elif t == "ladder":                       # kaalam ladder: same phrase through a tempo sequence, auto-advancing
                     try:
                         scales = tuple(float(x) for x in m["scales"]) if m.get("scales") else DEFAULT_SCALES
