@@ -37,28 +37,41 @@ class MPU6050Reader(threading.Thread):
         self._lock = threading.Lock()
         self._bus = None
         if not dry_run:
-            from smbus2 import SMBus
-            self._bus = SMBus(1); self._bus.write_byte_data(self.ADDR, self.PWR, 0)
-            self._bus.write_byte_data(self.ADDR, self.ACFG, 0x18)   # accel FS_SEL=3 => +/-16 g, matches the /2048 scale
+            self._open_bus()
 
     def _read_g(self) -> tuple[float, float, float]:
         d = self._bus.read_i2c_block_data(self.ADDR, self.ACC, 6)
         def s16(h, l): v = (h << 8) | l; return v - 65536 if v > 32767 else v
         return tuple(s16(d[i], d[i + 1]) / 2048.0 for i in (0, 2, 4))   # ±16 g range
 
+    def _open_bus(self) -> None:
+        from smbus2 import SMBus
+        self._bus = SMBus(1); self._bus.write_byte_data(self.ADDR, self.PWR, 0)
+        self._bus.write_byte_data(self.ADDR, self.ACFG, 0x18)          # ±16 g, matches the /2048 scale
+
     def run(self) -> None:
         if self.dry: return
         mags, grav, t0 = [], (0.0, 0.0, 1.0), time.monotonic()
-        last_t, armed = 0.0, True
+        last_t, armed, errors = 0.0, True, 0
         while True:
-            x, y, z = self._read_g(); m = math.sqrt(x * x + y * y + z * z)
+            try:
+                x, y, z = self._read_g(); m = math.sqrt(x * x + y * y + z * z)
+                errors = 0
+            except OSError as e:                                     # bus glitch / contention: never let the thread die
+                errors += 1
+                if errors in (1, 50): log.warning("IMU read error (%s), retrying%s", e, " and re-opening bus" if errors >= 50 else "")
+                if errors >= 50:
+                    try: self._open_bus()
+                    except OSError: pass
+                    errors = 0
+                time.sleep(0.05); continue
             if m < 1.3: grav = (x, y, z)           # quiet moment: remember gravity for tilt
             mags = (mags + [m])[-4:]
             now = time.monotonic() - t0
             s = stroke_from_samples(now, mags, grav, self.threshold)
             if s and armed and now - last_t > 0.12:     # one Stroke per hit: 120 ms refractory + re-arm
-                with self._lock: self._strokes.append(s)
                 last_t, armed = now, False
+                with self._lock: self._strokes.append(s)
             elif m < 1.0 + self.threshold * 0.4:        # settled back toward rest -> ready for the next hit
                 armed = True
             time.sleep(0.004)

@@ -87,6 +87,7 @@ class Hub:
         while True:
             for st in self.imu.drain():
                 if self.mode == "practice": self.round_strokes.append(st)   # motion coach: tilt at impact
+                log.info("IMU strike finger=%d peak=%.1fg tilt=%.0f", IMU_FINGER, st.peak_g, st.tilt_deg)
                 await self.on_strike(Strike(IMU_FINGER, time.monotonic(), min(1.0, st.peak_g / 8), "imu"))
             await asyncio.sleep(0.005)
 
