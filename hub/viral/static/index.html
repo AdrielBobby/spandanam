@@ -1,55 +1,67 @@
 <!doctype html><html><head><meta charset="utf-8"><title>Thaalam</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%2714%27 fill=%27%23f5c400%27/%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%276%27 fill=%27%230a0a0a%27/%3E%3C/svg%3E">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Noto+Sans+Malayalam:wght@400;600&display=swap');
-:root{--bg:#0a0a0a;--panel:#121212;--panel2:#171717;--line:#242424;--fg:#f2f2f2;--mut:#8a8a8a;--gold:#f5c400;--gold2:#ffd93d;--red:#e5484d;--green:#3ecf8e}
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Noto+Sans+Malayalam:wght@400;600;700&display=swap');
+:root{--bg:#070707;--panel:#101010;--panel2:#161616;--line:#222;--fg:#f4f4f4;--mut:#8b8b8b;--gold:#f5c400;--gold2:#ffd93d;--green:#3ecf8e;--red:#e5484d;
+ --c0:#ff453a;--c1:#ff9f0a;--c2:#ffd60a;--c3:#30d158;--c4:#0a84ff}
 *{box-sizing:border-box}html,body{height:100%}
-body{margin:0;background:radial-gradient(1200px 600px at 70% -10%,#1d1a0a 0%,var(--bg) 60%);color:var(--fg);font:15px/1.45 "Space Grotesk",system-ui,sans-serif}
-.ml,.mlbig{font-family:"Noto Sans Malayalam","Manjari","Malayalam Sangam MN",system-ui,sans-serif}
-header{display:flex;gap:18px;align-items:center;padding:14px 22px;border-bottom:1px solid var(--line);background:rgba(10,10,10,.7);backdrop-filter:blur(8px);position:sticky;top:0;z-index:5}
-h1{font-size:26px;margin:0;letter-spacing:-1px;font-weight:700}h1 span{color:var(--gold)}
-.tabs{display:flex;gap:6px;background:var(--panel);padding:4px;border-radius:12px;border:1px solid var(--line)}
-.tabs button{background:transparent;color:var(--mut);border:0;padding:8px 14px;border-radius:9px;cursor:pointer;font:inherit;font-weight:500}
-.tabs button.on{background:var(--gold);color:#000}.tabs button .ml{font-size:12px;opacity:.8}.tabs button.on .ml{color:#3a2f00;opacity:1}
+body{margin:0;background:#070707 radial-gradient(900px 500px at 80% -20%,rgba(245,196,0,.10),transparent 60%);color:var(--fg);font:15px/1.45 "Space Grotesk",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+.ml,.mlbig,.mln{font-family:"Noto Sans Malayalam","Manjari","Malayalam Sangam MN",system-ui,sans-serif}
+header{display:flex;gap:16px;align-items:center;padding:12px 22px;border-bottom:1px solid var(--line);background:rgba(7,7,7,.8);backdrop-filter:blur(10px);position:sticky;top:0;z-index:5}
+h1{font-size:24px;margin:0 6px 0 0;letter-spacing:-1px;font-weight:700}h1 span{color:var(--gold)}
+.tabs{display:flex;gap:4px;background:var(--panel);padding:4px;border-radius:12px;border:1px solid var(--line)}
+.tabs button{background:transparent;color:var(--mut);border:0;padding:8px 14px;border-radius:9px;cursor:pointer;font:inherit;font-weight:600;display:flex;gap:6px;align-items:baseline}
+.tabs button:hover{color:#ddd}.tabs button.on{background:var(--gold);color:#000}.tabs button .ml{font-size:12px;opacity:.75;font-weight:400}.tabs button.on .ml{color:#3a2f00;opacity:1}
 .pills{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
-.pill{font-size:11px;padding:4px 9px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:#cfcfcf;white-space:nowrap}
-.pill.gold{border-color:#4a3d00;color:var(--gold2)}.pill.green{border-color:#0f3d28;color:var(--green)}
+.pill{font-size:11px;padding:5px 10px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:#cfcfcf;white-space:nowrap;display:flex;gap:6px;align-items:center}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
+.pill.gold{border-color:#4a3d00;color:var(--gold2)}.pill.gold::before{background:var(--gold);box-shadow:0 0 8px var(--gold)}.pill.plain::before{display:none}
 #status{color:var(--mut);font-size:12px}
-main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:18px;padding:18px 22px;max-width:1500px;margin:0 auto}
-#lanes{position:relative;height:calc(100vh - 150px);min-height:520px;background:linear-gradient(180deg,#0c0c0c,#111);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5)}
-.lane{position:absolute;top:0;bottom:0;width:20%;border-right:1px solid #1a1a1a;background:linear-gradient(180deg,transparent 60%,rgba(255,255,255,.015))}
-.hitline{position:absolute;left:0;right:0;bottom:84px;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);box-shadow:0 0 18px rgba(245,196,0,.45)}
-.note{position:absolute;width:16%;left:2%;height:22px;border-radius:7px;opacity:.95;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#111;letter-spacing:.3px;box-shadow:0 2px 10px rgba(0,0,0,.35)}
-.pad{position:absolute;bottom:0;left:0;right:0;height:78px;display:flex;background:rgba(0,0,0,.35);border-top:1px solid var(--line)}
-.pad div{flex:1;margin:8px 6px;border-radius:12px;background:#151515;border:2px solid #2a2a2a;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;color:#9a9a9a;transition:transform .05s,filter .05s}
-.pad div.hit{transform:scale(.95);filter:brightness(1.8)}.pad b{font-size:14px;color:#fff}.pad small{color:#777}.pad .mln{font-size:11px;color:#b9b9b9}
-#hint{position:absolute;top:44%;left:0;right:0;text-align:center;color:#555;font-size:15px;pointer-events:none}#hint .ml{display:block;font-size:14px;color:#4a4a4a;margin-top:6px}
-#judge{position:absolute;top:18px;left:0;right:0;text-align:center;font-size:38px;font-weight:700;opacity:0;transition:opacity .15s;text-shadow:0 4px 24px rgba(0,0,0,.6);letter-spacing:-.5px}
-#stats{position:absolute;top:14px;right:16px;text-align:right;color:#bbb;font-size:13px}#stats b{color:var(--gold);font-size:26px;font-weight:700}
-#overlay{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55);backdrop-filter:blur(3px);z-index:3}
-#overlay .box{background:var(--panel);border:1px solid #3a3000;border-radius:16px;padding:22px 28px;text-align:center;min-width:300px;box-shadow:0 30px 80px rgba(0,0,0,.6)}
-#overlay .stars{font-size:40px;color:var(--gold);letter-spacing:4px}#overlay .big{font-size:30px;font-weight:700;margin:6px 0}#overlay small{color:var(--mut)}
-aside .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:12px}
-aside h3{margin:0 0 8px 0;font-size:14px;letter-spacing:.2px;color:#e8e8e8;display:flex;gap:8px;align-items:baseline}aside h3 .ml{color:var(--mut);font-size:12px;font-weight:400}
-label{display:block;color:var(--mut);font-size:12px;margin-top:10px}
-input,select{width:100%;background:#0d0d0d;color:#fff;border:1px solid var(--line);border-radius:9px;padding:9px 10px;margin-top:5px;font:inherit}
-input[type=range]{padding:0;accent-color:var(--gold)}
-button.primary{width:100%;margin-top:12px;background:var(--gold);color:#000;border:0;padding:11px;border-radius:10px;font:inherit;font-weight:700;cursor:pointer}
-button.primary:hover{background:var(--gold2)}
-button.ghost{width:100%;margin-top:6px;background:#171717;color:#fff;border:1px solid #333;padding:9px;border-radius:10px;font:inherit;cursor:pointer}button.ghost:hover{border-color:#555}
-#coach{white-space:pre-wrap;color:#ddd}.mlbig{font-size:17px;color:#fff;line-height:1.65}.ml{color:#bbb;font-size:13px}.en{color:#9a9a9a;font-size:13px;margin-top:6px}
+main{display:grid;grid-template-columns:minmax(0,1fr) 350px;gap:18px;padding:18px 22px;max-width:1540px;margin:0 auto}
+#lanes{position:relative;height:calc(100vh - 140px);min-height:540px;background:#0b0b0b;border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6),inset 0 0 0 1px rgba(255,255,255,.02)}
+.lane{position:absolute;top:0;bottom:0;width:20%;border-right:1px solid rgba(255,255,255,.04)}
+.lane:nth-child(1){background:linear-gradient(180deg,transparent 40%,rgba(255,69,58,.10))}.lane:nth-child(2){background:linear-gradient(180deg,transparent 40%,rgba(255,159,10,.10))}
+.lane:nth-child(3){background:linear-gradient(180deg,transparent 40%,rgba(255,214,10,.10))}.lane:nth-child(4){background:linear-gradient(180deg,transparent 40%,rgba(48,209,88,.10))}
+.lane:nth-child(5){background:linear-gradient(180deg,transparent 40%,rgba(10,132,255,.10))}
+.hitline{position:absolute;left:0;right:0;bottom:96px;height:3px;background:linear-gradient(90deg,transparent,var(--gold) 15%,var(--gold) 85%,transparent);box-shadow:0 0 22px rgba(245,196,0,.55);animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.75}50%{opacity:1}}
+.note{position:absolute;width:15%;left:2.5%;height:26px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#0b0b0b;letter-spacing:.4px;box-shadow:0 0 14px rgba(255,255,255,.15),0 4px 14px rgba(0,0,0,.5);background-image:linear-gradient(180deg,rgba(255,255,255,.35),rgba(255,255,255,0))}
+.pad{position:absolute;bottom:0;left:0;right:0;height:90px;display:flex;background:linear-gradient(180deg,rgba(0,0,0,.2),rgba(0,0,0,.6));border-top:1px solid var(--line)}
+.pad div{flex:1;margin:10px 7px;border-radius:14px;background:#121212;border:2px solid #2a2a2a;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;color:#9a9a9a;transition:transform .06s,box-shadow .06s,filter .06s;position:relative}
+.pad div.hit{transform:scale(.95);filter:brightness(1.7);box-shadow:0 0 30px currentColor}
+.pad b{font-size:15px;color:#fff;letter-spacing:.2px}.pad small{color:var(--gold2);font-size:12px;font-weight:600}.pad .mln{font-size:12px;color:#a8a8a8}
+.pad .key{position:absolute;top:6px;right:8px;font-size:10px;color:#666;border:1px solid #333;border-radius:5px;padding:1px 5px}
+#hint{position:absolute;top:42%;left:0;right:0;text-align:center;color:#5a5a5a;font-size:16px;pointer-events:none}#hint b{color:#8a8a8a}#hint .ml{display:block;font-size:15px;color:#4c4c4c;margin-top:8px}
+#judge{position:absolute;top:22px;left:0;right:0;text-align:center;font-size:42px;font-weight:700;opacity:0;transition:opacity .15s,transform .15s;text-shadow:0 6px 30px rgba(0,0,0,.7);letter-spacing:-.5px}
+#stats{position:absolute;top:16px;right:18px;text-align:right;color:#bbb;font-size:13px}#stats b{color:var(--gold);font-size:30px;font-weight:700;letter-spacing:-1px}
+#overlay{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);z-index:3}
+#overlay .box{background:linear-gradient(180deg,#171512,#0f0f0f);border:1px solid #3a3000;border-radius:18px;padding:26px 32px;text-align:center;min-width:320px;box-shadow:0 30px 90px rgba(0,0,0,.7)}
+#overlay .stars{font-size:44px;color:var(--gold);letter-spacing:6px;text-shadow:0 0 30px rgba(245,196,0,.5)}#overlay .big{font-size:32px;font-weight:700;margin:6px 0}#overlay small{color:var(--mut)}
+aside .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px 18px;margin-bottom:12px}
+aside h3{margin:0 0 10px 0;font-size:14px;letter-spacing:.2px;color:#ececec;display:flex;gap:8px;align-items:baseline}aside h3 .ml{color:var(--mut);font-size:12px;font-weight:400}
+label{display:block;color:var(--mut);font-size:12px;margin-top:12px}
+input,select{width:100%;background:#0b0b0b;color:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 11px;margin-top:6px;font:inherit}
+select:focus,input:focus{outline:none;border-color:#4a3d00}
+input[type=range]{padding:0;accent-color:var(--gold);height:24px}
+button.primary{width:100%;margin-top:14px;background:linear-gradient(180deg,var(--gold2),var(--gold));color:#000;border:0;padding:12px;border-radius:11px;font:inherit;font-weight:700;cursor:pointer;box-shadow:0 8px 24px rgba(245,196,0,.18)}
+button.primary:hover{filter:brightness(1.05)}
+button.ghost{width:100%;margin-top:8px;background:#151515;color:#fff;border:1px solid #2e2e2e;padding:10px;border-radius:11px;font:inherit;cursor:pointer}button.ghost:hover{border-color:#555}
+#coach{white-space:pre-wrap;color:#ddd}.mlbig{font-size:17px;color:#fff;line-height:1.7}.ml{color:#bbb;font-size:13px}.en{color:#9a9a9a;font-size:13px;margin-top:8px;line-height:1.5}
+.ashaan{display:flex;gap:12px;align-items:flex-start}.avatar{flex:none;width:40px;height:40px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#ffe27a,#b98a00);color:#2a2000;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;box-shadow:0 6px 18px rgba(245,196,0,.25)}
 .hidden{display:none}
-.click{position:absolute;bottom:0;height:78px;width:20%;background:rgba(245,196,0,.12);pointer-events:none}
-.eng{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;cursor:pointer;background:#0d0d0d}
-.eng.on{border-color:var(--gold);background:#1a1600}.eng b{color:#fff;min-width:56px}.badge{font-size:10px;padding:2px 7px;border-radius:999px;background:#222;color:#bbb}
-.badge.dev{background:#0a3d1a;color:#7ee2a0}.badge.lap{background:#1b2a4a;color:#8fb8ff}.badge.down{background:#4a1b1b;color:#ff9d9d}
-.side{display:grid;grid-template-columns:1fr 1fr;gap:10px}.side>div{background:#0d0d0d;border:1px solid var(--line);border-radius:10px;padding:10px}
-.side h4{margin:0 0 6px 0;font-size:12px;color:#aaa;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.click{position:absolute;bottom:0;height:90px;width:20%;background:rgba(245,196,0,.14);pointer-events:none}
+.eng{display:flex;align-items:center;gap:8px;padding:9px 11px;border:1px solid var(--line);border-radius:11px;cursor:pointer;background:#0c0c0c;transition:border-color .1s}
+.eng:hover{border-color:#444}.eng.on{border-color:var(--gold);background:#1a1600;box-shadow:inset 0 0 0 1px rgba(245,196,0,.25)}.eng b{color:#fff;min-width:58px}
+.badge{font-size:10px;padding:2px 7px;border-radius:999px;background:#222;color:#bbb}.badge.dev{background:#0a3d1a;color:#7ee2a0}.badge.lap{background:#1b2a4a;color:#8fb8ff}.badge.down{background:#4a1b1b;color:#ff9d9d}
+.side{display:grid;grid-template-columns:1fr 1fr;gap:10px}.side>div{background:#0c0c0c;border:1px solid var(--line);border-radius:12px;padding:12px}
+.side h4{margin:0 0 8px 0;font-size:12px;color:#aaa;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+#scoreInfo,#summary,#engineNote{color:#a8a8a8;font-size:13px;line-height:1.5}
+hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 @media (max-width:1000px){main{grid-template-columns:1fr}#lanes{height:60vh}}
 </style></head><body>
 <header><h1>Thaa<span>lam</span></h1>
 <div class="tabs"><button id="tFree" class="on">Free flow · <span class="ml">സ്വതന്ത്രം</span></button><button id="tLearn">Learn · <span class="ml">പഠിക്കൂ</span></button><button id="tPractice">Practice · <span class="ml">പരിശീലനം</span></button></div>
 <span id="status"></span>
-<div class="pills"><span class="pill gold" id="pillEngine">Gemma · …</span><span class="pill" id="pillAudio">🔊 …</span><span class="pill" id="pillKeys" title="SPACE=thumb (or IMU) · J K L ; = index→pinky">⌨ SPACE J K L ;</span></div></header>
+<div class="pills"><span class="pill gold" id="pillEngine">Gemma · …</span><span class="pill plain" id="pillAudio">🔊 …</span><span class="pill plain" id="pillKeys" title="SPACE=thumb (or IMU) · J K L ; = index→pinky">⌨ SPACE J K L ;</span></div></header>
 <main>
 <section id="lanes">
   <div id="hint">Press <b>Start tempo</b> and play with <b>SPACE J K L ;</b> — or <b>Learn</b> a track<span class="ml">താളം തുടങ്ങൂ, അല്ലെങ്കിൽ ഒരു താളം പഠിക്കൂ</span></div>
@@ -66,9 +78,9 @@ button.ghost{width:100%;margin-top:6px;background:#171717;color:#fff;border:1px 
     <button class="primary" id="goFree">Start tempo · താളം തുടങ്ങൂ</button><button class="ghost" id="stop">Stop · നിർത്തൂ</button></div>
   <div class="card hidden" id="cLearn"><h3>Learn a track · <span class="ml">ഒരു താളം പഠിക്കൂ</span></h3>
     <label>Audio (mp3/wav)</label><input type="file" id="file" accept="audio/*"><button class="primary" id="upload">Analyze with Gemma · വിശകലനം ചെയ്യൂ</button>
-    <hr style="border-color:#222"><label>…or compose with Gemini</label><input id="brief" placeholder="playful Onam melam, builds to a kalasham">
+    <hr><label>…or compose with Gemini</label><input id="brief" placeholder="playful Onam melam, builds to a kalasham">
     <select id="ckit"></select><button class="ghost" id="compose">Compose · രചിക്കൂ</button>
-    <hr style="border-color:#222"><label>…or type a vaaythari phrase</label><input id="phraseText" placeholder="dhim tha ka ta ki" value="dhim tha ka ta ki"><button class="ghost" id="loadPhrase">Load phrase</button>
+    <hr><label>…or type a vaaythari phrase</label><input id="phraseText" placeholder="dhim tha ka ta ki" value="dhim tha ka ta ki"><button class="ghost" id="loadPhrase">Load phrase</button>
     <div id="scoreInfo" style="margin-top:10px;color:#bbb;font-size:13px"></div></div>
   <div class="card hidden" id="cPractice"><h3>Practice · <span class="ml">പരിശീലനം</span></h3>
     <label>Phrase</label><select id="phrase"><option value="">whole piece</option></select>
@@ -79,14 +91,15 @@ button.ghost{width:100%;margin-top:6px;background:#171717;color:#fff;border:1px 
   <div class="card" id="cEngine"><h3>Gemma engine <span class="ml" style="font-size:12px">· ഏത് ജെമ്മ?</span></h3>
     <div id="engines" style="display:flex;flex-direction:column;gap:6px;font-size:13px"></div>
     <div id="engineNote" style="color:#777;font-size:12px;margin-top:6px"></div></div>
-  <div class="card"><h3>Ashaan says · <span class="ml">ആശാൻ പറയുന്നു</span></h3><div id="coach" class="mlbig">—</div></div>
+  <div class="card"><h3>Ashaan says · <span class="ml">ആശാൻ പറയുന്നു</span></h3><div class="ashaan"><div class="avatar ml">ആ</div><div id="coach" class="mlbig" style="flex:1">—</div></div></div>
 </aside></main>
 <script>
 const COLORS=["#ff3b30","#ff9500","#ffd60a","#34c759","#0a84ff"],NAMES=["thumb","index","middle","ring","pinky"],NAMES_ML=["തള്ളവിരൽ","ചൂണ്ടുവിരൽ","നടുവിരൽ","മോതിരവിരൽ","ചെറുവിരൽ"];
 const KEYS={" ":0,"j":1,"k":2,"l":3,";":4};
 let ws,state={},score=null,play=null,fmap={names:NAMES,syllables:["","","","",""]};
 const $=s=>document.querySelector(s);
-function pad(){$("#pad").innerHTML=NAMES.map((n,i)=>`<div id="p${i}" style="border-color:${COLORS[i]}"><b>${fmap.names[i]||n}</b><small>${fmap.syllables[i]||""}</small><span class="mln ml">${NAMES_ML[i]}</span></div>`).join("");
+const KEYLBL=["SPACE","J","K","L",";"];
+function pad(){$("#pad").innerHTML=NAMES.map((n,i)=>`<div id="p${i}" style="border-color:${COLORS[i]};color:${COLORS[i]}"><span class="key">${KEYLBL[i]}</span><b>${fmap.names[i]||n}</b><small>${fmap.syllables[i]||"—"}</small><span class="mln ml">${NAMES_ML[i]}</span></div>`).join("");
  for(let i=0;i<5;i++){const l=document.createElement("div");l.className="lane";l.style.left=(i*20)+"%";$("#lanes").prepend(l);}}
 function flash(i){const p=$("#p"+i);if(!p)return;p.classList.add("hit");setTimeout(()=>p.classList.remove("hit"),80);}
 function judge(t,c){const j=$("#judge");j.textContent=t;j.style.color=c;j.style.opacity=1;setTimeout(()=>j.style.opacity=0,300);}
@@ -112,7 +125,7 @@ function startPractice(s,lead){$("#overlay").style.display="none";$("#hint").sty
  s.notes.forEach((n,i)=>{const el=document.createElement("div");el.className="note";el.style.left=(n.finger*20+2)+"%";el.style.background=COLORS[n.finger];el.dataset.t=t0+n.beat*beat;el.textContent=(n.label||"").toUpperCase();el.title=n.label;$("#lanes").appendChild(el);notesEl.push(el);});requestAnimationFrame(anim);}
 function markNote(i,v){const el=notesEl[i];if(!el)return;if(v==="auto"){el.style.boxShadow="0 0 12px #fff";setTimeout(()=>el.style.opacity=.25,120);return;}el.style.opacity=.25;if(v==="miss"||v==="wrong_finger")el.style.background="#333";}
 function anim(){if(!play)return;const now=performance.now(),H=$("#lanes").clientHeight-70,speed=H/2000;
- notesEl.forEach(el=>{const dt=+el.dataset.t-now;const y=H-dt*speed;el.style.top=(y-9)+"px";el.style.display=(y<-20||y>H+40)?"none":"block";});requestAnimationFrame(anim);}
+ notesEl.forEach(el=>{const dt=+el.dataset.t-now;const y=H-dt*speed;el.style.top=(y-9)+"px";el.style.display=(y<-20||y>H+40)?"none":"flex";});requestAnimationFrame(anim);}
 // controls
 fetch("/api/state").then(r=>r.json()).then(s=>{state=s;for(const id of["kit","ckit"]){$("#"+id).innerHTML=Object.entries(s.kits).map(([k,v])=>`<option value="${k}" ${k===s.kit?"selected":""}>${v.name}</option>`).join("");}if(s.score)setScore(s.score);if(s.dry)$("#status").textContent="dry mode (no GPIO)";});
 $("#bpm").oninput=e=>$("#bpmv").textContent=e.target.value;
