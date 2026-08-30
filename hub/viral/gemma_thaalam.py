@@ -41,7 +41,7 @@ def repair_json(text: str) -> str:
     import re
     t = re.sub(r",\s*([}\]])", r"\1", t)                      # trailing commas
     if t.count('"') % 2 == 1:
-        t = t[: t.rfind('"')]                                    # unterminated string
+        t = t.rstrip() + '"'                                     # unterminated string: close it, keep the text
     t = re.sub(r",\s*\"[^\"]*\"?\s*:?\s*$", "", t)             # dangling key
     t = t.rstrip(", \n\t:")
     stack = []
@@ -213,7 +213,7 @@ def is_small_model(model: str) -> bool:
 
 COACH_SYS_SMALL = """You are a warm percussion teacher. Reply with JSON: {"say_en": "<one or two real sentences of coaching based on the facts>",
 "drill_phrase": <index number from the facts>, "drill_bpm": <number from the facts>, "focus": "timing|finger|dynamics|reward"}.
-Write real sentences, never placeholders. Mention the weak fingers and syllable by name."""
+Write real sentences, never placeholders. Mention the weak fingers and syllable by name. HARD LIMIT: say_en is at most 2 short sentences (under 40 words)."""
 
 
 async def coach(client, url, model, summary: dict, names: tuple[str, ...], syllables: tuple[str, ...]) -> dict:
@@ -221,7 +221,7 @@ async def coach(client, url, model, summary: dict, names: tuple[str, ...], sylla
         facts = (f"accuracy {round(float(summary.get('accuracy', 0)) * 100)}%, dominant error {summary.get('dominant_error', 'none')}, "
                  f"weak fingers {', '.join(summary.get('weak_fingers', [])) or 'none'}, weak syllables {', '.join(summary.get('weak_syllables', [])) or 'none'}, "
                  f"recommended bpm {summary.get('recommended_bpm', summary.get('current_bpm', 80))}, recommended phrase index 0")
-        c = await _chat(client, url, model, COACH_SYS_SMALL, facts, None, 140, timeout=120.0)
+        c = await _chat(client, url, model, COACH_SYS_SMALL, facts, None, 300, timeout=150.0)
         try:
             d = normalize_keys(json.loads(c)) if c else {}
         except json.JSONDecodeError:

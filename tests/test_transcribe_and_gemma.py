@@ -76,3 +76,9 @@ def test_cycle_scores_handle_beats_that_round_up():
     from viral.transcribe import cycle_scores, cluster_cycle_scores
     ev = [(i * 0.5 + 0.13, i % 3, 0.9) for i in range(40)]      # 0.13 offsets are off-grid; last beat rounds up
     assert set(cycle_scores(ev)) and set(cluster_cycle_scores(ev))
+
+
+def test_repair_json_keeps_text_of_unterminated_string():
+    from viral.gemma_thaalam import repair_json
+    d = json.loads(repair_json('{"say_en": "Okay, let us work on the ring finger at 72 bpm'))
+    assert d["say_en"].startswith("Okay, let us work")
