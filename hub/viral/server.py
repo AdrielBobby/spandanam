@@ -15,7 +15,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from . import judge
-from .config import FINGER_KEYS, KITS, Config
+from .config import FINGER_KEYS, IMU_FINGER, INPUT_OFFSET_MS, KITS, Config
 from .events import Strike
 from .bridge import analysis_for_coach, analyze_attempt, phrase_to_score
 from .gemma_game import next_round
@@ -60,6 +60,7 @@ class Hub:
         self.http = httpx.AsyncClient()
         self.last_summary: dict = {}
         self.game_level = 0; self.game_history: list[dict] = []
+        self.karaoke = False                                     # vaaythari chant is opt-in (toggle in the dashboard)
         # Gemma engines: primary from config; extras from GEMMA_ENGINES (e.g. laptop e4b over tunnel + on-Pi 1b)
         # With named engines configured, they ARE the list; otherwise the single configured Gemma is "primary".
         self.engines: dict[str, dict] = dict(cfg.gemma_engines) or {"primary": {"url": cfg.ollama_url, "model": cfg.gemma_model}}
@@ -86,7 +87,7 @@ class Hub:
         while True:
             for st in self.imu.drain():
                 if self.mode == "practice": self.round_strokes.append(st)   # motion coach: tilt at impact
-                await self.on_strike(Strike(0, time.monotonic(), min(1.0, st.peak_g / 8), "imu"))
+                await self.on_strike(Strike(IMU_FINGER, time.monotonic(), min(1.0, st.peak_g / 8), "imu"))
             await asyncio.sleep(0.005)
 
     # ---- free mode
@@ -102,6 +103,7 @@ class Hub:
         if self.metro_task: self.metro_task.cancel(); self.metro_task = None
         self.play = None; self.glove.all_off()
         if self.mode in ("listen", "practice"): self.mode = "idle"      # _listen_loop / _practice_loop check this and exit
+        speech.stop()                                                      # kill any chant/speech immediately
         try:
             self.sampler.stop()
         except Exception: pass
@@ -226,7 +228,9 @@ class Hub:
         return [sum(1 for n in sc.notes if n.finger == f) for f in range(5)]
 
     def _chant(self, sc: Score) -> None:
-        """Fire-and-forget the vaaythari chant; speech.chant() blocks on a subprocess, so it must run off the event loop."""
+        """Fire-and-forget the vaaythari chant (only when karaoke is on); speech.chant() blocks on a subprocess, so it runs off the loop."""
+        if not self.karaoke:
+            return
         syllables = chantable_syllables(sc)
         if syllables:
             asyncio.get_running_loop().run_in_executor(None, speech.chant, syllables, sc.bpm)
@@ -248,7 +252,7 @@ def create_app(cfg: Config) -> FastAPI:
     @app.get("/api/state")
     async def state():
         return {"mode": hub.mode, "bpm": hub.bpm, "cycle": hub.cycle, "kit": hub.sampler.kit, "kits": KITS, "keys": FINGER_KEYS, "labels_ml": LABELS_ML,
-                "audio_device": getattr(hub.sampler.mixer, "device_name", None),
+                "audio_device": getattr(hub.sampler.mixer, "device_name", None), "karaoke": hub.karaoke,
                 "gemma": {"model": hub.engine()["model"], "ollama_url": hub.engine()["url"], "gemini_model": cfg.gemini_model,
                           "mode": hub.engine_mode, "engines": {n: hub.engine(n) for n in hub.engines}},
                 "score": json.loads(hub.score.to_json()) if hub.score else None, "dry": cfg.dry}
@@ -279,6 +283,20 @@ def create_app(cfg: Config) -> FastAPI:
         hub.engine_mode = mode
         await hub.broadcast({"type": "status", "text": f"Gemma engine → {mode}"})
         return {"ok": True, "mode": mode, "active": hub.active_engines()}
+
+    @app.get("/api/kit/{finger}.wav")
+    async def kit_sample(finger: int):
+        """Current kit voice as a WAV so the browser can play sounds itself (the Pi may have no speaker)."""
+        import io, wave
+        import numpy as np
+        from .sound import SR
+        buf = hub.sampler.buf[max(0, min(4, finger))]
+        b = io.BytesIO()
+        with wave.open(b, "wb") as w:
+            w.setnchannels(1); w.setsampwidth(2); w.setframerate(SR)
+            w.writeframes((np.clip(buf, -1, 1) * 32767).astype("<i2").tobytes())
+        from fastapi.responses import Response
+        return Response(b.getvalue(), media_type="audio/wav", headers={"Cache-Control": "no-store"})
 
     @app.post("/api/audio/reopen")
     async def audio_reopen():
@@ -334,7 +352,7 @@ def create_app(cfg: Config) -> FastAPI:
                 m = json.loads(await sock.receive_text()); t = m.get("type")
                 if t == "key":
                     f = FINGER_KEYS.get(m.get("key", ""))
-                    if f is not None: await hub.on_strike(Strike(f, time.monotonic(), float(m.get("v", 0.8)), "key"))
+                    if f is not None: await hub.on_strike(Strike(f, time.monotonic() - INPUT_OFFSET_MS / 1000.0, float(m.get("v", 0.8)), "key"))
                 elif t == "free":
                     hub.ladder = None
                     hub.bpm = float(m.get("bpm", hub.bpm)); hub.cycle = int(m.get("cycle", hub.cycle)); hub.click_mode = m.get("click", hub.click_mode)
@@ -342,6 +360,10 @@ def create_app(cfg: Config) -> FastAPI:
                 elif t == "kit": hub.sampler.set_kit(m.get("kit", "chenda")); await hub.broadcast({"type": "kit", "kit": hub.sampler.kit})
                 elif t == "practice": hub.ladder = None; await hub.start_practice(m.get("phrase"), float(m.get("speed", 1.0)))
                 elif t == "listen": hub.ladder = None; await hub.start_listen(m.get("phrase"), float(m.get("speed", 1.0)))
+                elif t == "karaoke":                      # vaaythari chant toggle; _chant() reads this flag
+                    hub.karaoke = bool(m.get("on", False))
+                    if not hub.karaoke: speech.stop()
+                    await hub.broadcast({"type": "status", "text": f"vaaythari chant {'on' if hub.karaoke else 'off'}"})
                 elif t == "ladder":                       # kaalam ladder: same phrase through a tempo sequence, auto-advancing
                     try:
                         scales = tuple(float(x) for x in m["scales"]) if m.get("scales") else DEFAULT_SCALES
@@ -368,8 +390,8 @@ def create_app(cfg: Config) -> FastAPI:
                         await hub.broadcast({"type": "status", "text": f"phrase error: {e}"})
         except WebSocketDisconnect:
             hub.clients.discard(sock)
-            if not hub.clients and hub.mode in ("listen", "practice"):   # last dashboard gone (reload/close): stop playback
-                await hub.stop_all(); hub.mode = "idle"
+            if not hub.clients and hub.mode in ("listen", "practice"):   # last dashboard gone (reload/close): stop playback + ladder + chant
+                hub.ladder = None; await hub.stop_all(); hub.mode = "idle"
     return app
 
 

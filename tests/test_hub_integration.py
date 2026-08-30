@@ -108,6 +108,7 @@ async def _strike_every_note_perfectly(hub: Hub) -> None:
 # --- karaoke wiring ----------------------------------------------------------------------
 
 def test_chant_fires_with_correct_syllables_and_bpm(hub, monkeypatch):
+    hub.karaoke = True                       # chant is opt-in since 30 Aug (default off)
     calls = []
     monkeypatch.setattr(speech, "chant", lambda syllables, bpm: calls.append((syllables, bpm)))
 

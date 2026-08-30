@@ -2,7 +2,8 @@ import os
 from dataclasses import dataclass, field
 
 FINGERS = ("thumb", "index", "middle", "ring", "pinky")
-FINGER_KEYS = {"j": 1, "k": 2, "l": 3, ";": 4, " ": 0}      # laptop keys emulate IMUs; finger 0 = real MPU6050
+FINGER_KEYS = {"j": 1, "k": 2, "l": 3, ";": 4, " ": 0}      # laptop keys emulate IMUs
+IMU_FINGER = 2   # which finger the single MPU6050 is physically mounted on (0=thumb .. 4=pinky)
 FINGER_COLORS = ("#ff3b30", "#ff9500", "#ffd60a", "#34c759", "#0a84ff")
 
 # Pi 5 GPIO (BCM). Buzzers on PWM-capable pins, LEDs on plain GPIO.
@@ -16,8 +17,11 @@ KITS = {
     "kit":       {"name": "Drum kit",  "voices": ["kick", "snare", "hihat", "tom", "ride"]},
 }
 
-# Hit windows (ms) like a rhythm game
-PERFECT_MS, GOOD_MS, MISS_MS = 40, 90, 180
+# Hit windows (ms) like a rhythm game. Humans on a laptop keyboard + browser render add ~30–60 ms of jitter,
+# so these are a little wider than a hardware controller would need.
+PERFECT_MS, GOOD_MS, MISS_MS = 60, 120, 220
+# Constant input latency to subtract from every strike (keyboard/USB/browser). Tune with INPUT_OFFSET_MS=… ; 0 = off.
+INPUT_OFFSET_MS = float(os.environ.get("INPUT_OFFSET_MS", "0"))
 
 
 def parse_engines(spec: str | None) -> dict[str, dict]:
