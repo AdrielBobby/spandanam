@@ -1,42 +1,59 @@
 <!doctype html><html><head><meta charset="utf-8"><title>Thaalam</title>
 <style>
-:root{--bg:#0a0a0a;--fg:#f2f2f2;--acc:#ffd60a;--mut:#666}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.4 "Space Grotesk",system-ui,sans-serif}
-header{display:flex;gap:16px;align-items:center;padding:12px 20px;border-bottom:1px solid #222}
-h1{font-size:22px;margin:0;letter-spacing:-.5px}h1 span{color:var(--acc)}
-.tabs button{background:#161616;color:var(--fg);border:1px solid #333;padding:8px 14px;border-radius:8px;cursor:pointer}
-.tabs button.on{background:var(--acc);color:#000;border-color:var(--acc)}
-main{display:grid;grid-template-columns:1fr 320px;gap:16px;padding:16px 20px}
-#lanes{position:relative;height:520px;background:#111;border:1px solid #222;border-radius:12px;overflow:hidden}
-.lane{position:absolute;top:0;bottom:0;width:20%;border-right:1px solid #1d1d1d}
-.hitline{position:absolute;left:0;right:0;bottom:70px;height:2px;background:#444}
-.note{position:absolute;width:16%;left:2%;height:18px;border-radius:6px;opacity:.95}
-.pad{position:absolute;bottom:0;left:0;right:0;height:64px;display:flex}
-.pad div{flex:1;margin:6px;border-radius:10px;background:#1a1a1a;border:2px solid #333;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;color:#aaa;transition:transform .05s}
-.pad div.hit{transform:scale(.94);filter:brightness(1.6)}
-.pad b{font-size:14px;color:#fff}.pad small{color:#777}
-#judge{position:absolute;top:14px;left:0;right:0;text-align:center;font-size:34px;font-weight:700;opacity:0;transition:opacity .15s}
-#stats{position:absolute;top:12px;right:14px;text-align:right;color:#bbb;font-size:13px}#stats b{color:var(--acc);font-size:20px}
-aside .card{background:#111;border:1px solid #222;border-radius:12px;padding:14px;margin-bottom:12px}
-label{display:block;color:#999;font-size:12px;margin-top:8px}input,select{width:100%;background:#0d0d0d;color:#fff;border:1px solid #333;border-radius:8px;padding:8px;margin-top:4px}
-button.primary{width:100%;margin-top:10px;background:var(--acc);color:#000;border:0;padding:10px;border-radius:8px;font-weight:700;cursor:pointer}
-button.ghost{width:100%;margin-top:6px;background:#1a1a1a;color:#fff;border:1px solid #333;padding:8px;border-radius:8px;cursor:pointer}
-#coach{white-space:pre-wrap;color:#ddd}.ml{font-family:"Noto Sans Malayalam","Manjari","Malayalam Sangam MN",system-ui,sans-serif;color:#bbb;font-size:13px}.mlbig{font-family:"Noto Sans Malayalam","Manjari","Malayalam Sangam MN",system-ui,sans-serif;font-size:17px;color:#fff;line-height:1.6}.en{color:#999;font-size:13px;margin-top:6px}
-.hidden{display:none}#status{color:var(--mut);font-size:12px}
-.eng{display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid #333;border-radius:8px;cursor:pointer;background:#0d0d0d}
-.eng.on{border-color:var(--acc);background:#1a1700}.eng b{color:#fff}.badge{font-size:10px;padding:2px 6px;border-radius:999px;background:#222;color:#bbb}
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Noto+Sans+Malayalam:wght@400;600&display=swap');
+:root{--bg:#0a0a0a;--panel:#121212;--panel2:#171717;--line:#242424;--fg:#f2f2f2;--mut:#8a8a8a;--gold:#f5c400;--gold2:#ffd93d;--red:#e5484d;--green:#3ecf8e}
+*{box-sizing:border-box}html,body{height:100%}
+body{margin:0;background:radial-gradient(1200px 600px at 70% -10%,#1d1a0a 0%,var(--bg) 60%);color:var(--fg);font:15px/1.45 "Space Grotesk",system-ui,sans-serif}
+.ml,.mlbig{font-family:"Noto Sans Malayalam","Manjari","Malayalam Sangam MN",system-ui,sans-serif}
+header{display:flex;gap:18px;align-items:center;padding:14px 22px;border-bottom:1px solid var(--line);background:rgba(10,10,10,.7);backdrop-filter:blur(8px);position:sticky;top:0;z-index:5}
+h1{font-size:26px;margin:0;letter-spacing:-1px;font-weight:700}h1 span{color:var(--gold)}
+.tabs{display:flex;gap:6px;background:var(--panel);padding:4px;border-radius:12px;border:1px solid var(--line)}
+.tabs button{background:transparent;color:var(--mut);border:0;padding:8px 14px;border-radius:9px;cursor:pointer;font:inherit;font-weight:500}
+.tabs button.on{background:var(--gold);color:#000}.tabs button .ml{font-size:12px;opacity:.8}
+.pills{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.pill{font-size:11px;padding:4px 9px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:#cfcfcf;white-space:nowrap}
+.pill.gold{border-color:#4a3d00;color:var(--gold2)}.pill.green{border-color:#0f3d28;color:var(--green)}
+#status{color:var(--mut);font-size:12px}
+main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:18px;padding:18px 22px;max-width:1500px;margin:0 auto}
+#lanes{position:relative;height:calc(100vh - 150px);min-height:520px;background:linear-gradient(180deg,#0c0c0c,#111);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.lane{position:absolute;top:0;bottom:0;width:20%;border-right:1px solid #1a1a1a;background:linear-gradient(180deg,transparent 60%,rgba(255,255,255,.015))}
+.hitline{position:absolute;left:0;right:0;bottom:84px;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);box-shadow:0 0 18px rgba(245,196,0,.45)}
+.note{position:absolute;width:16%;left:2%;height:22px;border-radius:7px;opacity:.95;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#111;letter-spacing:.3px;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+.pad{position:absolute;bottom:0;left:0;right:0;height:78px;display:flex;background:rgba(0,0,0,.35);border-top:1px solid var(--line)}
+.pad div{flex:1;margin:8px 6px;border-radius:12px;background:#151515;border:2px solid #2a2a2a;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;color:#9a9a9a;transition:transform .05s,filter .05s}
+.pad div.hit{transform:scale(.95);filter:brightness(1.8)}.pad b{font-size:14px;color:#fff}.pad small{color:#777}.pad .mln{font-size:11px;color:#b9b9b9}
+#judge{position:absolute;top:18px;left:0;right:0;text-align:center;font-size:38px;font-weight:700;opacity:0;transition:opacity .15s;text-shadow:0 4px 24px rgba(0,0,0,.6);letter-spacing:-.5px}
+#stats{position:absolute;top:14px;right:16px;text-align:right;color:#bbb;font-size:13px}#stats b{color:var(--gold);font-size:26px;font-weight:700}
+#overlay{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55);backdrop-filter:blur(3px);z-index:3}
+#overlay .box{background:var(--panel);border:1px solid #3a3000;border-radius:16px;padding:22px 28px;text-align:center;min-width:300px;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+#overlay .stars{font-size:40px;color:var(--gold);letter-spacing:4px}#overlay .big{font-size:30px;font-weight:700;margin:6px 0}#overlay small{color:var(--mut)}
+aside .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:12px}
+aside h3{margin:0 0 8px 0;font-size:14px;letter-spacing:.2px;color:#e8e8e8;display:flex;gap:8px;align-items:baseline}aside h3 .ml{color:var(--mut);font-size:12px;font-weight:400}
+label{display:block;color:var(--mut);font-size:12px;margin-top:10px}
+input,select{width:100%;background:#0d0d0d;color:#fff;border:1px solid var(--line);border-radius:9px;padding:9px 10px;margin-top:5px;font:inherit}
+input[type=range]{padding:0;accent-color:var(--gold)}
+button.primary{width:100%;margin-top:12px;background:var(--gold);color:#000;border:0;padding:11px;border-radius:10px;font:inherit;font-weight:700;cursor:pointer}
+button.primary:hover{background:var(--gold2)}
+button.ghost{width:100%;margin-top:6px;background:#171717;color:#fff;border:1px solid #333;padding:9px;border-radius:10px;font:inherit;cursor:pointer}button.ghost:hover{border-color:#555}
+#coach{white-space:pre-wrap;color:#ddd}.mlbig{font-size:17px;color:#fff;line-height:1.65}.ml{color:#bbb;font-size:13px}.en{color:#9a9a9a;font-size:13px;margin-top:6px}
+.hidden{display:none}
+.click{position:absolute;bottom:0;height:78px;width:20%;background:rgba(245,196,0,.12);pointer-events:none}
+.eng{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;cursor:pointer;background:#0d0d0d}
+.eng.on{border-color:var(--gold);background:#1a1600}.eng b{color:#fff;min-width:56px}.badge{font-size:10px;padding:2px 7px;border-radius:999px;background:#222;color:#bbb}
 .badge.dev{background:#0a3d1a;color:#7ee2a0}.badge.lap{background:#1b2a4a;color:#8fb8ff}.badge.down{background:#4a1b1b;color:#ff9d9d}
-.side{display:grid;grid-template-columns:1fr 1fr;gap:10px}.side>div{background:#0d0d0d;border:1px solid #222;border-radius:8px;padding:10px}
-.side h4{margin:0 0 6px 0;font-size:12px;color:#aaa;display:flex;gap:6px;align-items:center}
-.click{position:absolute;bottom:0;height:64px;width:20%;background:rgba(255,214,10,.15);pointer-events:none}
+.side{display:grid;grid-template-columns:1fr 1fr;gap:10px}.side>div{background:#0d0d0d;border:1px solid var(--line);border-radius:10px;padding:10px}
+.side h4{margin:0 0 6px 0;font-size:12px;color:#aaa;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+@media (max-width:1000px){main{grid-template-columns:1fr}#lanes{height:60vh}}
 </style></head><body>
 <header><h1>Thaa<span>lam</span></h1>
 <div class="tabs"><button id="tFree" class="on">Free flow · <span class="ml">സ്വതന്ത്രം</span></button><button id="tLearn">Learn · <span class="ml">പഠിക്കൂ</span></button><button id="tPractice">Practice · <span class="ml">പരിശീലനം</span></button></div>
-<span id="status"></span><span style="margin-left:auto;color:#777;font-size:12px">keys: SPACE=thumb (or IMU) · J K L ; = index→pinky · <span class="ml">തള്ളവിരൽ · ചൂണ്ടുവിരൽ · നടുവിരൽ · മോതിരവിരൽ · ചെറുവിരൽ</span></span></header>
+<span id="status"></span>
+<div class="pills"><span class="pill gold" id="pillEngine">Gemma · …</span><span class="pill" id="pillAudio">🔊 …</span><span class="pill" id="pillKeys" title="SPACE=thumb (or IMU) · J K L ; = index→pinky">⌨ SPACE J K L ;</span></div></header>
 <main>
 <section id="lanes">
   <div id="judge"></div><div id="stats"><b id="pts">0</b> pts · streak <span id="streak">0</span></div>
   <div class="hitline"></div><div class="pad" id="pad"></div>
+  <div id="overlay"><div class="box"><div class="stars" id="ovStars">☆☆☆</div><div class="big" id="ovPts">0</div><div id="ovLine" style="color:#ddd"></div><small id="ovSub"></small></div></div>
 </section>
 <aside>
   <div class="card" id="cFree"><h3>Free flow · <span class="ml">സ്വതന്ത്രമായി വായിക്കൂ</span></h3>
@@ -63,11 +80,11 @@ button.ghost{width:100%;margin-top:6px;background:#1a1a1a;color:#fff;border:1px 
   <div class="card"><h3>Ashaan says · <span class="ml">ആശാൻ പറയുന്നു</span></h3><div id="coach" class="mlbig">—</div></div>
 </aside></main>
 <script>
-const COLORS=["#ff3b30","#ff9500","#ffd60a","#34c759","#0a84ff"],NAMES=["thumb","index","middle","ring","pinky"];
+const COLORS=["#ff3b30","#ff9500","#ffd60a","#34c759","#0a84ff"],NAMES=["thumb","index","middle","ring","pinky"],NAMES_ML=["തള്ളവിരൽ","ചൂണ്ടുവിരൽ","നടുവിരൽ","മോതിരവിരൽ","ചെറുവിരൽ"];
 const KEYS={" ":0,"j":1,"k":2,"l":3,";":4};
 let ws,state={},score=null,play=null,fmap={names:NAMES,syllables:["","","","",""]};
 const $=s=>document.querySelector(s);
-function pad(){$("#pad").innerHTML=NAMES.map((n,i)=>`<div id="p${i}" style="border-color:${COLORS[i]}"><b>${fmap.names[i]||n}</b><small>${fmap.syllables[i]||""}</small></div>`).join("");
+function pad(){$("#pad").innerHTML=NAMES.map((n,i)=>`<div id="p${i}" style="border-color:${COLORS[i]}"><b>${fmap.names[i]||n}</b><small>${fmap.syllables[i]||""}</small><span class="mln ml">${NAMES_ML[i]}</span></div>`).join("");
  for(let i=0;i<5;i++){const l=document.createElement("div");l.className="lane";l.style.left=(i*20)+"%";$("#lanes").prepend(l);}}
 function flash(i){const p=$("#p"+i);if(!p)return;p.classList.add("hit");setTimeout(()=>p.classList.remove("hit"),80);}
 function judge(t,c){const j=$("#judge");j.textContent=t;j.style.color=c;j.style.opacity=1;setTimeout(()=>j.style.opacity=0,300);}
@@ -77,7 +94,8 @@ function connect(){ws=new WebSocket(`ws://${location.host}/ws`);ws.onmessage=e=>
  else if(m.type==="score"){setScore(m.score);const conf=m.confidence!=null?` · confidence ${Math.round(m.confidence*100)}%`:"";$("#scoreInfo").innerHTML=`${m.score.title} · ${m.score.thaalam} · ${m.score.notes.length} notes · ${Math.round(m.score.bpm)} bpm${conf}<br><span class="mlbig" style="font-size:14px">${m.summary_ml||""}</span><br><span class="en">${m.gemma||""}</span>`;$("#status").textContent=`${m.score.thaalam}${conf}`;$("#tPractice").click();}
  else if(m.type==="practice_start"){startPractice(m.score,m.lead_in_s);}
  else if(m.type==="miss"){m.notes.forEach(i=>markNote(i,"miss"));$("#streak").textContent=0;judge("MISS · വിട്ടുപോയി","#ff3b30");}
- else if(m.type==="practice_end"){play=null;const s=m.summary;$("#summary").innerHTML=`${"★".repeat(s.stars)}${"☆".repeat(3-s.stars)} &nbsp; ${Math.round(s.accuracy*100)}% · ${s.points} pts<br>perfect ${s.perfect} · good ${s.good} · miss ${s.misses} · wrong finger ${s.wrong_finger}`;}
+ else if(m.type==="practice_end"){play=null;const s=m.summary;$("#summary").innerHTML=`${"★".repeat(s.stars)}${"☆".repeat(3-s.stars)} &nbsp; ${Math.round(s.accuracy*100)}% · ${s.points} pts<br>perfect ${s.perfect} · good ${s.good} · miss ${s.misses} · wrong finger ${s.wrong_finger}`;
+   $("#ovStars").textContent="★".repeat(s.stars)+"☆".repeat(3-s.stars);$("#ovPts").textContent=s.points+" pts";$("#ovLine").textContent=`${Math.round(s.accuracy*100)}% · perfect ${s.perfect} · good ${s.good} · miss ${s.misses} · wrong ${s.wrong_finger}`;$("#ovSub").textContent=s.stars>=2?"കൊള്ളാം! · Ashaan is thinking…":"വീണ്ടും ശ്രമിക്കൂ · Ashaan is thinking…";$("#overlay").style.display="flex";setTimeout(()=>$("#overlay").style.display="none",3500);}
  else if(m.type==="coach"){const one=r=>`<div class="mlbig">${r.say_ml||""}</div><div class="en">${r.say_en||""}</div>${r.say_manglish?`<div class="en" style="color:#777;font-style:italic">${r.say_manglish}</div>`:""}${r.drill_phrase!=null?`<div style="color:#777;font-size:12px;margin-top:6px">drill: phrase ${(+r.drill_phrase)+1} @ ${Math.round(r.drill_bpm||0)} bpm</div>`:""}`;
    const head=r=>`<h4><b>${r.engine||""}</b> <span class="badge ${r.on_device?"dev":"lap"}">${r.on_device?"on-device":"laptop"}</span> <span class="badge">${r.model||""}</span> <span class="badge">${r.seconds!=null?r.seconds+" s":""}</span></h4>`;
    if(m.results&&m.results.length>1){$("#coach").innerHTML=`<div class="side">${m.results.map(r=>`<div>${head(r)}${one(r)}</div>`).join("")}</div>`;}
@@ -87,9 +105,9 @@ function connect(){ws=new WebSocket(`ws://${location.host}/ws`);ws.onmessage=e=>
 document.addEventListener("keydown",e=>{if(e.repeat)return;const k=e.key.toLowerCase();if(k in KEYS||e.key===" "){e.preventDefault();ws.send(JSON.stringify({type:"key",key:e.key===" "?" ":k,v:.9}));}});
 // falling notes
 let notesEl=[];function setScore(s){score=s;fmap=s.finger_map;pad();const ph=$("#phrase");ph.innerHTML='<option value="">whole piece</option>'+(s.phrases||[]).map((p,i)=>`<option value="${i}">phrase ${i+1} (beats ${p[0]}–${p[1]})</option>`).join("");}
-function startPractice(s,lead){score=s;fmap=s.finger_map;pad();$("#pts").textContent=0;$("#streak").textContent=0;notesEl.forEach(n=>n.remove());notesEl=[];
+function startPractice(s,lead){$("#overlay").style.display="none";score=s;fmap=s.finger_map;pad();$("#pts").textContent=0;$("#streak").textContent=0;notesEl.forEach(n=>n.remove());notesEl=[];
  const t0=performance.now()+lead*1000,beat=60000/s.bpm;play={t0,beat};
- s.notes.forEach((n,i)=>{const el=document.createElement("div");el.className="note";el.style.left=(n.finger*20+2)+"%";el.style.background=COLORS[n.finger];el.dataset.t=t0+n.beat*beat;el.textContent="";el.title=n.label;$("#lanes").appendChild(el);notesEl.push(el);});requestAnimationFrame(anim);}
+ s.notes.forEach((n,i)=>{const el=document.createElement("div");el.className="note";el.style.left=(n.finger*20+2)+"%";el.style.background=COLORS[n.finger];el.dataset.t=t0+n.beat*beat;el.textContent=(n.label||"").toUpperCase();el.title=n.label;$("#lanes").appendChild(el);notesEl.push(el);});requestAnimationFrame(anim);}
 function markNote(i,v){const el=notesEl[i];if(!el)return;if(v==="auto"){el.style.boxShadow="0 0 12px #fff";setTimeout(()=>el.style.opacity=.25,120);return;}el.style.opacity=.25;if(v==="miss"||v==="wrong_finger")el.style.background="#333";}
 function anim(){if(!play)return;const now=performance.now(),H=$("#lanes").clientHeight-70,speed=H/2000;
  notesEl.forEach(el=>{const dt=+el.dataset.t-now;const y=H-dt*speed;el.style.top=(y-9)+"px";el.style.display=(y<-20||y>H+40)?"none":"block";});requestAnimationFrame(anim);}
@@ -110,6 +128,8 @@ async function loadEngines(){try{const g=await (await fetch("/api/gemma")).json(
   const badges=e?`<span class="badge ${e.on_device?"dev":"lap"}">${e.on_device?"on-device":"laptop"}</span><span class="badge ${e.ok?"":"down"}">${e.model}${e.ok?(e.loaded&&e.loaded.includes(e.model)?" · loaded":""):" · unreachable"}</span>`:`<span class="badge">side by side</span>`;
   return `<div class="eng ${on?"on":""}" data-mode="${mo}"><b>${mo==="both"?"Both":mo}</b>${badges}</div>`;}).join("");
  document.querySelectorAll(".eng").forEach(el=>el.onclick=async()=>{await fetch("/api/gemma/select",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({mode:el.dataset.mode})});loadEngines();});
- $("#engineNote").textContent=g.mode==="both"?"Coaching runs on every engine in parallel — compare answers and speed.":`Learn, coach, game and compose use “${g.mode}”.`;}catch(e){$("#engineNote").textContent="engine status unavailable";}}
+ $("#engineNote").textContent=g.mode==="both"?"Coaching runs on every engine in parallel — compare answers and speed.":`Learn, coach, game and compose use “${g.mode}”.`;
+ $("#pillEngine").textContent=g.mode==="both"?"Gemma · both engines":`Gemma · ${g.model}${g.on_device?" · on-device":" · laptop"}`;
+ const st=await (await fetch("/api/state")).json();$("#pillAudio").textContent="🔊 "+(st.audio_device||"no audio");}catch(e){$("#engineNote").textContent="engine status unavailable";}}
 pad();connect();loadEngines();setInterval(loadEngines,15000);
 </script></body></html>
