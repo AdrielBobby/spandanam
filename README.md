@@ -2,7 +2,7 @@
 
 **Air percussion on your fingers with real‑time feedback — and Gemma running locally that turns any track into a finger‑by‑finger *thaalam* lesson and coaches you back like an Ashaan.**
 
-Built in 24 h at the [Google Physical AI Hackathon: Onam Edition](https://physicalai.tinkerhub.org/), TinkerSpace Kochi, 29–30 Aug 2026 · Themes: **Onakalikal · Homecoming** · Powered by **Gemma** (on‑device) + **Gemini** (cloud).
+🏆 **Winner, Best Use of Gemma** at the [Google Physical AI Hackathon: Onam Edition](https://physicalai.tinkerhub.org/), TinkerSpace Kochi, 29–30 Aug 2026. Built in 24 hours · Themes: **Onakalikal · Homecoming** · Powered by **Gemma** (on‑device) + **Gemini** (cloud).
 
 ## What it is
 A glove with an IMU, a vibration motor and an LED per finger. Strike the air → the drum voice for that finger plays. The fingers **feel the tempo** (buzz) and **see which finger is next** (LED); the dashboard shows falling notes per finger, judged live — PERFECT · കൃത്യം / GOOD / LATE / WRONG FINGER / MISS — with a 3D chenda stage.
